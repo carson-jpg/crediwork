@@ -1,0 +1,33 @@
+<h2 class="error">❌ Payment Failed</h2>
+
+<p>Dear {{userName}},</p>
+
+<p>We're sorry to inform you that your recent payment attempt was unsuccessful.</p>
+
+<div class="highlight">
+  <h3>Payment Details:</h3>
+  <ul>
+    <li><strong>Amount:</strong> KES {{amount}}</li>
+    <li><strong>Status:</strong> <span class="error">Failed</span></li>
+    <li><strong>Reason:</strong> {{reason}}</li>
+  </ul>
+</div>
+
+<p>Don't worry! This can happen for various reasons such as:</p>
+<ul>
+  <li>Insufficient funds in your M-Pesa account</li>
+  <li>Network connectivity issues</li>
+  <li>Transaction timeout</li>
+  <li>Invalid phone number format</li>
+</ul>
+
+<p>You can try making the payment again from your dashboard. If you continue to experience issues, please contact our support team for assistance.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{supportEmail}}" class="button">Contact Support</a>
+</div>
+
+<p>We're here to help you get started with CrediWork successfully!</p>
+
+<p>Best regards,</p>
+<p>The CrediWork Support Team</p>

@@ -1,0 +1,25 @@
+<h2 class="warning">⏰ Payment Reminder</h2>
+
+<p>Dear {{userName}},</p>
+
+<p>This is a friendly reminder that your payment for the <strong>{{packageName}} Package</strong> is still pending.</p>
+
+<div class="highlight">
+  <h3>Payment Details:</h3>
+  <ul>
+    <li><strong>Package:</strong> {{packageName}}</li>
+    <li><strong>Amount Due:</strong> KES {{amount}}</li>
+    <li><strong>Days Pending:</strong> {{daysPending}} day(s)</li>
+  </ul>
+</div>
+
+<p>Please complete your payment as soon as possible to activate your account and start earning daily rewards.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{paymentUrl}}" class="button">Complete Payment</a>
+</div>
+
+<p>If you have any questions or need assistance, please contact our support team at <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.</p>
+
+<p>Thank you for choosing CrediWork!</p>
+<p>The CrediWork Team</p>
