@@ -97,7 +97,7 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
       PartyA: phoneNumber,
       PartyB: MPESA_SHORTCODE,
       PhoneNumber: phoneNumber,
-      CallbackURL: callbackUrl,
+      CallBackURL: callbackUrl,
       AccountReference: accountReference,
       TransactionDesc: transactionDesc
     };
