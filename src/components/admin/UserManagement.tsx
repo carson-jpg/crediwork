@@ -21,7 +21,7 @@ export const UserManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
@@ -71,7 +71,7 @@ export const UserManagement: React.FC = () => {
     console.log('handleUserAction called:', { userId, action });
 
     try {
-      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
       const token = localStorage.getItem('token');
       console.log('Auth token present:', !!token);
 

@@ -19,7 +19,7 @@ export const TaskCreate: React.FC = () => {
     difficulty: 'easy'
   });
 
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

@@ -42,7 +42,7 @@ export const TaskAssign: React.FC = () => {
   const [dueDate, setDueDate] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
 
   useEffect(() => {
     if (taskId) {

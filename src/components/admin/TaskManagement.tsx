@@ -45,7 +45,7 @@ export const TaskManagement: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
 
   useEffect(() => {
     fetchTasks();
