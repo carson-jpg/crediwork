@@ -77,6 +77,9 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
   const timestamp = getTimestamp();
   const password = getPassword(MPESA_SHORTCODE, MPESA_PASSKEY, timestamp);
 
+  // Use a default callback URL for development if not provided
+  const callbackUrl = MPESA_CALLBACK_URL || 'https://webhook.site/your-webhook-url';
+
   const payload = {
     BusinessShortCode: MPESA_SHORTCODE,
     Password: password,
@@ -86,7 +89,7 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
     PartyA: phoneNumber,
     PartyB: MPESA_SHORTCODE,
     PhoneNumber: phoneNumber,
-    CallbackURL: MPESA_CALLBACK_URL,
+    CallbackURL: callbackUrl,
     AccountReference: accountReference,
     TransactionDesc: transactionDesc
   };

@@ -1,38 +1,47 @@
+// Additional dependencies for M-Pesa STK Push
+import axios from 'axios';
+import moment from 'moment';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-import multer from 'multer';
-import cron from 'node-cron';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { connectDB } from './config/database.js';
-import User from './models/User.js';
-import Withdrawal from './models/Withdrawal.js';
-import UserTask from './models/UserTask.js';
-import Task from './models/Task.js';
-import TaskSubmission from './models/TaskSubmission.js';
-import Wallet from './models/Wallet.js';
-import Payment from './models/Payment.js';
-import { authenticateToken, requireAdmin } from './middleware/auth.js';
-import { initiateSTKPush } from './services/mpesaService.js';
-import { sendPaymentSuccessEmail, sendPaymentFailedEmail, sendWithdrawalApprovedEmail, sendWithdrawalRejectedEmail } from './services/emailService.js';
+import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
+import hbs from 'nodemailer-express-handlebars';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import winston from 'winston';
+import cron from 'node-cron';
 
-// Load environment variables
+// Import models
+import User from './models/User.js';
+import Task from './models/Task.js';
+import UserTask from './models/UserTask.js';
+import TaskSubmission from './models/TaskSubmission.js';
+import Payment from './models/Payment.js';
+import Wallet from './models/Wallet.js';
+import Withdrawal from './models/Withdrawal.js';
+
+// Import services
+import { sendPaymentSuccessEmail, sendPaymentFailedEmail, sendWithdrawalSubmittedEmail, sendWithdrawalApprovedEmail, sendWithdrawalRejectedEmail } from './services/emailService.js';
+import { initiateSTKPush } from './services/mpesaService.js';
+
+// Import middleware
+import { authenticateToken, requireAdmin } from './middleware/auth.js';
+
+// Initialize dotenv
 dotenv.config();
 
-// Connect to database
-connectDB();
-
+// Create Express app
 const app = express();
 
-// Security middleware
+// Middleware
 app.use(helmet());
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
-  credentials: true
-}));
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -41,35 +50,57 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Database connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crediwork')
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// Multer configuration for file uploads
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+// Additional STK Push endpoint (standalone)
+app.post('/stkpush', async (req, res) => {
+  const { phone, amount } = req.body;
+
+  if (!phone || !amount) {
+    return res.status(400).json({ error: 'Phone and amount are required' });
   }
-});
 
-// Basic route
-app.get('/', (req, res) => {
-  res.json({
-    message: 'CrediWork API Server',
-    status: 'running',
-    timestamp: new Date().toISOString()
-  });
-});
+  try {
+    const auth = Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString('base64');
+    const tokenResponse = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+      headers: {
+        Authorization: `Basic ${auth}`
+      }
+    });
+    const accessToken = tokenResponse.data.access_token;
 
-// Health check route
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
+    const timestamp = moment().format('YYYYMMDDHHmmss');
+    const password = Buffer.from(`${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`).toString('base64');
+
+    const stkPushData = {
+      BusinessShortCode: process.env.MPESA_SHORTCODE,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: 'CustomerPayBillOnline',
+      Amount: amount,
+      PartyA: phone,
+      PartyB: process.env.MPESA_SHORTCODE,
+      PhoneNumber: phone,
+      CallBackURL: 'https://your-callback-url.com/callback', // Replace with your actual callback URL
+      AccountReference: 'M-Pesa STK Push',
+      TransactionDesc: 'Payment for goods'
+    };
+
+    const response = await axios.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', stkPushData, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error initiating STK push:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to initiate STK push' });
+  }
 });
 
 // User dashboard endpoints
@@ -1037,6 +1068,54 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Additional STK Push endpoint (standalone)
+app.post('/stkpush', async (req, res) => {
+  const { phone, amount } = req.body;
+
+  if (!phone || !amount) {
+    return res.status(400).json({ error: 'Phone and amount are required' });
+  }
+
+  try {
+    const auth = Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString('base64');
+    const tokenResponse = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+      headers: {
+        Authorization: `Basic ${auth}`
+      }
+    });
+    const accessToken = tokenResponse.data.access_token;
+
+    const timestamp = moment().format('YYYYMMDDHHmmss');
+    const password = Buffer.from(`${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`).toString('base64');
+
+    const stkPushData = {
+      BusinessShortCode: process.env.MPESA_SHORTCODE,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: 'CustomerPayBillOnline',
+      Amount: amount,
+      PartyA: phone,
+      PartyB: process.env.MPESA_SHORTCODE,
+      PhoneNumber: phone,
+      CallBackURL: 'https://your-callback-url.com/callback', // Replace with your actual callback URL
+      AccountReference: 'M-Pesa STK Push',
+      TransactionDesc: 'Payment for goods'
+    };
+
+    const response = await axios.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', stkPushData, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error initiating STK push:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to initiate STK push' });
   }
 });
 
