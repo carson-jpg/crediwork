@@ -38,16 +38,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored auth token
+    // Check for stored auth token and validate it
     const token = localStorage.getItem('token');
     if (token) {
-      // TODO: Validate token with backend instead of removing it
-      // For now, keep the token and assume it's valid
-      // This should be replaced with proper token validation
-      console.log('Token found in localStorage');
+      console.log('Token found in localStorage, validating...');
+      validateToken(token);
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
+
+  const validateToken = async (token: string) => {
+    try {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const response = await fetch(`${baseURL}/api/auth/validate`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const validatedUser: User = {
+          _id: data.user._id,
+          email: data.user.email,
+          phone: data.user.phone,
+          fullName: `${data.user.firstName} ${data.user.lastName}`,
+          role: data.user.role,
+          package: data.user.package,
+          packagePrice: data.user.package === 'A' ? 1000 : 2000,
+          dailyEarning: data.user.package === 'A' ? 50 : 100,
+          status: data.user.status,
+          activationDate: data.user.activationDate ? new Date(data.user.activationDate) : null,
+          createdAt: new Date(data.user.createdAt),
+          updatedAt: new Date(data.user.updatedAt),
+        };
+        setUser(validatedUser);
+        console.log('Token validated successfully, user:', validatedUser.role);
+      } else {
+        console.log('Token validation failed, clearing token');
+        localStorage.removeItem('token');
+      }
+    } catch (error) {
+      console.error('Token validation error:', error);
+      localStorage.removeItem('token');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);

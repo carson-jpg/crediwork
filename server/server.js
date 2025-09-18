@@ -1028,6 +1028,30 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// Token validation endpoint
+app.get('/api/auth/validate', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      user: {
+        _id: req.user._id,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        phone: req.user.phone,
+        role: req.user.role,
+        package: req.user.package,
+        status: req.user.status,
+        activationDate: req.user.activationDate,
+        createdAt: req.user.createdAt,
+        updatedAt: req.user.updatedAt,
+      }
+    });
+  } catch (error) {
+    console.error('Token validation error:', error);
+    res.status(500).json({ error: 'Token validation failed' });
+  }
+});
+
 // User login endpoint
 app.post('/api/auth/login', async (req, res) => {
   try {
