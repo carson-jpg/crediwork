@@ -13,12 +13,22 @@ const {
   MPESA_CALLBACK_URL
 } = process.env;
 
+// Debug logging for environment variables
+console.log('M-Pesa Environment Variables:');
+console.log('MPESA_CONSUMER_KEY:', MPESA_CONSUMER_KEY ? 'Set' : 'Not set');
+console.log('MPESA_CONSUMER_SECRET:', MPESA_CONSUMER_SECRET ? 'Set' : 'Not set');
+console.log('MPESA_SHORTCODE:', MPESA_SHORTCODE);
+console.log('MPESA_PASSKEY:', MPESA_PASSKEY ? 'Set' : 'Not set');
+console.log('MPESA_ENV:', MPESA_ENV);
+console.log('MPESA_CALLBACK_URL:', MPESA_CALLBACK_URL);
+
 const baseUrls = {
   sandbox: 'https://sandbox.safaricom.co.ke',
   production: 'https://api.safaricom.co.ke'
 };
 
 const baseUrl = MPESA_ENV === 'production' ? baseUrls.production : baseUrls.sandbox;
+console.log('Using base URL:', baseUrl);
 
 let accessToken = null;
 let tokenExpiry = null;
@@ -72,6 +82,9 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
   });
 
   try {
+    // Clear cached token to force fresh retrieval
+    accessToken = null;
+    tokenExpiry = null;
     const token = await getAccessToken();
     console.log('Got access token:', token ? 'Yes' : 'No');
 
@@ -86,7 +99,7 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
     const password = getPassword(MPESA_SHORTCODE, MPESA_PASSKEY, timestamp);
 
     // Use a default callback URL for development if not provided
-    const callbackUrl = MPESA_CALLBACK_URL || 'https://webhook.site/your-webhook-url';
+    const callbackUrl = MPESA_CALLBACK_URL || 'https://crediwork.onrender.com/api/payment/stkpush/callback';
 
     const payload = {
       BusinessShortCode: MPESA_SHORTCODE,
