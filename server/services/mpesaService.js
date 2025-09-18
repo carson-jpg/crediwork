@@ -71,40 +71,62 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
     callbackUrl: MPESA_CALLBACK_URL
   });
 
-  const token = await getAccessToken();
-  console.log('Got access token:', token ? 'Yes' : 'No');
-
-  const timestamp = getTimestamp();
-  const password = getPassword(MPESA_SHORTCODE, MPESA_PASSKEY, timestamp);
-
-  // Use a default callback URL for development if not provided
-  const callbackUrl = MPESA_CALLBACK_URL || 'https://webhook.site/your-webhook-url';
-
-  const payload = {
-    BusinessShortCode: MPESA_SHORTCODE,
-    Password: password,
-    Timestamp: timestamp,
-    TransactionType: 'CustomerPayBillOnline',
-    Amount: amount,
-    PartyA: phoneNumber,
-    PartyB: MPESA_SHORTCODE,
-    PhoneNumber: phoneNumber,
-    CallbackURL: callbackUrl,
-    AccountReference: accountReference,
-    TransactionDesc: transactionDesc
-  };
-
-  console.log('STK Push payload:', JSON.stringify(payload, null, 2));
-
   try {
+    const token = await getAccessToken();
+    console.log('Got access token:', token ? 'Yes' : 'No');
+
+    if (!token) {
+      return {
+        success: false,
+        error: 'Failed to obtain access token'
+      };
+    }
+
+    const timestamp = getTimestamp();
+    const password = getPassword(MPESA_SHORTCODE, MPESA_PASSKEY, timestamp);
+
+    // Use a default callback URL for development if not provided
+    const callbackUrl = MPESA_CALLBACK_URL || 'https://webhook.site/your-webhook-url';
+
+    const payload = {
+      BusinessShortCode: MPESA_SHORTCODE,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: 'CustomerPayBillOnline',
+      Amount: amount,
+      PartyA: phoneNumber,
+      PartyB: MPESA_SHORTCODE,
+      PhoneNumber: phoneNumber,
+      CallbackURL: callbackUrl,
+      AccountReference: accountReference,
+      TransactionDesc: transactionDesc
+    };
+
+    console.log('STK Push payload:', JSON.stringify(payload, null, 2));
+
     const response = await axios.post(`${baseUrl}/mpesa/stkpush/v1/processrequest`, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
+
     console.log('STK Push response:', response.data);
-    return response.data;
+
+    // Check if the response indicates success
+    if (response.data.ResponseCode === '0') {
+      return {
+        success: true,
+        transactionId: response.data.CheckoutRequestID,
+        response: response.data
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.ResponseDescription || 'STK Push failed',
+        response: response.data
+      };
+    }
   } catch (error) {
     console.error('Failed to initiate STK push:', {
       status: error.response?.status,
@@ -112,6 +134,21 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
       data: error.response?.data,
       message: error.message
     });
-    throw error;
+
+    // Handle specific token errors
+    if (error.response?.status === 401 || error.response?.data?.errorMessage?.includes('token')) {
+      // Clear cached token to force refresh on next request
+      accessToken = null;
+      tokenExpiry = null;
+      return {
+        success: false,
+        error: 'Invalid or expired token. Token has been cleared for refresh.'
+      };
+    }
+
+    return {
+      success: false,
+      error: error.response?.data?.errorMessage || error.message || 'Failed to initiate STK push'
+    };
   }
 }

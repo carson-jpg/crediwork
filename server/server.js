@@ -1154,7 +1154,30 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
     );
 
     if (!stkPushResult.success) {
-      return res.status(500).json({ error: stkPushResult.error || 'Failed to initiate payment' });
+      // If token error, clear token cache and retry once
+      if (stkPushResult.error && stkPushResult.error.includes('Invalid or expired token')) {
+        // Clear cached token
+        const mpesaService = require('./services/mpesaService.js');
+        mpesaService.accessToken = null;
+        mpesaService.tokenExpiry = null;
+
+        // Retry STK push
+        const retryResult = await initiateSTKPush(
+          phoneNumber,
+          amount,
+          `User-${userId}`,
+          `Payment for ${user.package} package`
+        );
+
+        if (!retryResult.success) {
+          return res.status(500).json({ error: retryResult.error || 'Failed to initiate payment after retry' });
+        }
+
+        // Use retry result
+        stkPushResult.transactionId = retryResult.transactionId;
+      } else {
+        return res.status(500).json({ error: stkPushResult.error || 'Failed to initiate payment' });
+      }
     }
 
     // Create payment record
