@@ -52,7 +52,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://crediwork.onrender.com/api/auth/login', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const response = await fetch(`${baseURL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +98,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://crediwork.onrender.com/api/auth/register', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const response = await fetch(`${baseURL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
