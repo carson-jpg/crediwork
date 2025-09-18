@@ -1,8 +1,12 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bell, LogOut, User, Wallet } from 'lucide-react';
+import { Bell, LogOut, User, Wallet, Menu } from 'lucide-react';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
 
   return (
@@ -16,6 +20,14 @@ export const Header: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 text-gray-600 hover:text-gray-900 transition-colors md:hidden"
+              aria-label="Toggle sidebar"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <User className="h-4 w-4" />
               <span>{user?.fullName}</span>

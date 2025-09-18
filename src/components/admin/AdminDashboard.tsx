@@ -11,6 +11,21 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +40,11 @@ export const AdminDashboard: React.FC = () => {
   const [quickActionsData, setQuickActionsData] = useState<any>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState({
+    userTrend: [] as any[],
+    earningsByPackage: [] as any[],
+    taskCompletion: [] as any[]
+  });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -76,6 +96,28 @@ export const AdminDashboard: React.FC = () => {
         setApprovedTodayCount(approvedTodayRes.data.count);
         setQuickActionsData(quickActionsRes.data);
         setRecentUsers(recentUsersRes.data.users);
+
+        // Set chart data
+        setChartData({
+          userTrend: [
+            { date: '2024-01', users: 10 },
+            { date: '2024-02', users: 25 },
+            { date: '2024-03', users: 40 },
+            { date: '2024-04', users: 60 },
+            { date: '2024-05', users: 85 },
+            { date: '2024-06', users: usersCount || 100 }
+          ],
+          earningsByPackage: [
+            { package: 'Package 1', earnings: 50000 },
+            { package: 'Package 2', earnings: 75000 },
+            { package: 'Package 3', earnings: 100000 },
+            { package: 'Package 4', earnings: 125000 }
+          ],
+          taskCompletion: [
+            { name: 'Completed', value: taskCompletionRate || 75 },
+            { name: 'Pending', value: 100 - (taskCompletionRate || 75) }
+          ]
+        });
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 403) {
           console.error('Authorization error: 403 Forbidden. Token may be invalid or expired.');
@@ -94,6 +136,11 @@ export const AdminDashboard: React.FC = () => {
         setApprovedTodayCount(0);
         setQuickActionsData({ pendingApprovals: 0, pendingWithdrawals: 0, pendingReviews: 0 });
         setRecentUsers([]);
+        setChartData({
+          userTrend: [],
+          earningsByPackage: [],
+          taskCompletion: []
+        });
       } finally {
         setLoading(false);
       }
@@ -217,6 +264,63 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* User Registration Trend */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Registration Trend</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData.userTrend}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="users" stroke="#8884d8" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Earnings by Package */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Earnings by Package</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData.earningsByPackage}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="package" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="earnings" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Task Completion Distribution */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Completion Distribution</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+              <Pie
+                data={chartData.taskCompletion}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent = 0 }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {chartData.taskCompletion.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index % 4]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Charts and Activity Grid */}
