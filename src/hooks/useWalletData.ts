@@ -15,7 +15,8 @@ export const useWalletData = (user: User | null) => {
     const fetchWalletData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/user/wallet', {
+        const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+        const response = await fetch(`${baseURL}/api/user/wallet`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -29,7 +30,7 @@ export const useWalletData = (user: User | null) => {
         const data = await response.json();
 
         // Fetch pending withdrawals to calculate pendingBalance
-        const withdrawalsResponse = await fetch('/api/user/withdrawals', {
+        const withdrawalsResponse = await fetch(`${baseURL}/api/user/withdrawals`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

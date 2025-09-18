@@ -20,7 +20,8 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ packagePrice, pack
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/payment/stkpush', {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const res = await fetch(`${baseURL}/api/payment/stkpush`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

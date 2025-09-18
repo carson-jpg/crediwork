@@ -17,7 +17,8 @@ export const useTaskData = (user: User | null) => {
     const fetchTaskData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/user/tasks', {
+        const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+        const response = await fetch(`${baseURL}/api/user/tasks`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -90,7 +91,8 @@ export const useTaskData = (user: User | null) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/user/tasks/${taskId}/submit`, {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const response = await fetch(`${baseURL}/api/user/tasks/${taskId}/submit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
