@@ -35,21 +35,37 @@ let tokenExpiry = null;
 
 export async function getAccessToken() {
   if (accessToken && tokenExpiry && new Date() < tokenExpiry) {
+    console.log('Using cached token, expires at:', tokenExpiry);
     return accessToken;
   }
 
+  console.log('Requesting new access token from:', `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`);
   const auth = Buffer.from(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`).toString('base64');
+  console.log('Auth header length:', auth.length);
+
   try {
     const response = await axios.get(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       headers: {
         Authorization: `Basic ${auth}`
       }
     });
+
+    console.log('Token response status:', response.status);
+    console.log('Token response data:', response.data);
+
     accessToken = response.data.access_token;
     tokenExpiry = new Date(new Date().getTime() + (response.data.expires_in - 60) * 1000); // 60s buffer
+
+    console.log('New token obtained, expires at:', tokenExpiry);
+    console.log('Token length:', accessToken.length);
+
     return accessToken;
   } catch (error) {
-    console.error('Failed to get M-Pesa access token:', error.response?.data || error.message);
+    console.error('Failed to get M-Pesa access token:');
+    console.error('Status:', error.response?.status);
+    console.error('Status Text:', error.response?.statusText);
+    console.error('Response Data:', error.response?.data);
+    console.error('Error Message:', error.message);
     throw error;
   }
 }
