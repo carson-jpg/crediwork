@@ -556,6 +556,95 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
+// Get detailed user information by ID
+app.get('/api/admin/users/:userId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Get user details
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get user's wallet information
+    const wallet = await Wallet.findOne({ userId }).select('balance totalEarned totalWithdrawn lastUpdated');
+
+    // Get user's task statistics
+    const [totalTasks, completedTasks, pendingTasks] = await Promise.all([
+      UserTask.countDocuments({ userId }),
+      UserTask.countDocuments({ userId, status: 'completed' }),
+      UserTask.countDocuments({ userId, status: 'assigned' })
+    ]);
+
+    // Get recent task submissions (last 5)
+    const recentSubmissions = await TaskSubmission.find({ userId })
+      .populate('taskId', 'title reward')
+      .sort({ submittedAt: -1 })
+      .limit(5)
+      .select('taskId status submittedAt earnedAmount');
+
+    // Get recent withdrawals (last 5)
+    const recentWithdrawals = await Withdrawal.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('amount status paymentMethod createdAt processedAt');
+
+    // Get recent payments (last 5)
+    const recentPayments = await Payment.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('amount status mpesaReceiptNumber transactionDate');
+
+    // Calculate success rate
+    const successRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+    res.json({
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        package: user.package,
+        packageAmount: user.packageAmount,
+        dailyEarning: user.dailyEarning,
+        status: user.status,
+        activationDate: user.activationDate,
+        paymentProof: user.paymentProof,
+        kycData: user.kycData,
+        referralCode: user.referralCode,
+        referredBy: user.referredBy,
+        lastLogin: user.lastLogin,
+        deviceFingerprint: user.deviceFingerprint,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+      wallet: wallet || {
+        balance: 0,
+        totalEarned: 0,
+        totalWithdrawn: 0,
+        lastUpdated: new Date()
+      },
+      statistics: {
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        successRate: Math.round(successRate * 100) / 100
+      },
+      recentActivity: {
+        submissions: recentSubmissions,
+        withdrawals: recentWithdrawals,
+        payments: recentPayments
+      }
+    });
+  } catch (error) {
+    console.error('Get user details error:', error);
+    res.status(500).json({ error: 'Failed to fetch user details' });
+  }
+});
+
 // Get all withdrawals with filtering and pagination
 app.get('/api/admin/withdrawals', authenticateToken, requireAdmin, async (req, res) => {
   try {

@@ -8,12 +8,15 @@ import {
   Mail
 } from 'lucide-react';
 import axios from 'axios';
+import UserDetailsModal from './UserDetailsModal';
 
 export const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [users, setUsers] = useState<any[]>([]);
   const [currentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -110,7 +113,10 @@ export const UserManagement: React.FC = () => {
       } else if (action === 'suspend') {
         // Implement suspend if needed
       } else if (action === 'view') {
-        // Implement view details if needed
+        // Implement view details
+        console.log('Opening user details modal for user:', userId);
+        setSelectedUserId(userId);
+        setIsModalOpen(true);
       } else if (action === 'email') {
         // Implement send email if needed
       }
@@ -119,6 +125,11 @@ export const UserManagement: React.FC = () => {
       console.error('Error details:', error.response?.data || error.message);
       // Optionally show error feedback to user
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedUserId(null);
   };
 
   // Users are now filtered server-side, so we use the fetched users directly
@@ -283,6 +294,13 @@ export const UserManagement: React.FC = () => {
           <p className="text-gray-600">Try adjusting your search or filter criteria</p>
         </div>
       )}
+
+      {/* User Details Modal */}
+      <UserDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        userId={selectedUserId}
+      />
     </div>
   );
 };
