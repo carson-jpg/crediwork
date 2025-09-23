@@ -90,8 +90,9 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({ isOpen, onClose, us
     setError(null);
 
     try {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`${baseURL}/api/admin/users/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
