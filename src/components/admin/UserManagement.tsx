@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import UserDetailsModal from './UserDetailsModal';
+import { SendEmailModal } from './SendEmailModal';
 
 export const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +18,8 @@ export const UserManagement: React.FC = () => {
   const [currentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [selectedUserForEmail, setSelectedUserForEmail] = useState<any>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -118,7 +121,12 @@ export const UserManagement: React.FC = () => {
         setSelectedUserId(userId);
         setIsModalOpen(true);
       } else if (action === 'email') {
-        // Implement send email if needed
+        // Open email modal
+        const user = users.find(u => u._id === userId);
+        if (user) {
+          setSelectedUserForEmail(user);
+          setIsEmailModalOpen(true);
+        }
       }
     } catch (error: any) {
       console.error('User action error:', error);
@@ -300,6 +308,15 @@ export const UserManagement: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         userId={selectedUserId}
+      />
+
+      {/* Send Email Modal */}
+      <SendEmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        userId={selectedUserForEmail?._id || null}
+        userEmail={selectedUserForEmail?.email}
+        userName={selectedUserForEmail?.fullName}
       />
     </div>
   );

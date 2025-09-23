@@ -645,6 +645,55 @@ app.get('/api/admin/users/:userId', authenticateToken, requireAdmin, async (req,
   }
 });
 
+// Send custom email to user
+app.post('/api/admin/users/:userId/send-email', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { subject, message, template } = req.body;
+
+    // Get user details
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Validate input
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'Subject and message are required' });
+    }
+
+    // Import sendEmail function
+    const { sendEmail } = await import('./services/emailService.js');
+
+    // Send custom email
+    const emailResult = await sendEmail(
+      user.email,
+      subject,
+      template || 'custom-email', // Use custom template or default
+      {
+        userName: `${user.firstName} ${user.lastName}`,
+        message,
+        adminName: req.user.firstName + ' ' + req.user.lastName,
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@crediwork.com',
+        dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard`
+      }
+    );
+
+    if (!emailResult.success) {
+      return res.status(500).json({ error: 'Failed to send email', details: emailResult.error });
+    }
+
+    res.json({
+      message: 'Email sent successfully',
+      messageId: emailResult.messageId,
+      recipient: user.email
+    });
+  } catch (error) {
+    console.error('Send email error:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
 // Get all withdrawals with filtering and pagination
 app.get('/api/admin/withdrawals', authenticateToken, requireAdmin, async (req, res) => {
   try {

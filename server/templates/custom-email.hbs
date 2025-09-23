@@ -1,0 +1,46 @@
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+  <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 30px;">
+      <h1 style="color: #333; margin: 0; font-size: 28px;">{{appName}}</h1>
+      <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">Personal Message</p>
+    </div>
+
+    <!-- Greeting -->
+    <div style="margin-bottom: 25px;">
+      <h2 style="color: #333; margin: 0 0 15px 0; font-size: 22px;">Hello {{userName}}!</h2>
+    </div>
+
+    <!-- Message Content -->
+    <div style="margin-bottom: 30px;">
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; border-left: 4px solid #007bff;">
+        <p style="margin: 0; line-height: 1.6; color: #333; white-space: pre-wrap;">{{message}}</p>
+      </div>
+    </div>
+
+    <!-- Admin Info -->
+    <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 25px;">
+      <p style="margin: 0; color: #495057; font-size: 14px;">
+        <strong>From:</strong> {{adminName}}<br>
+        <strong>Support Email:</strong> <a href="mailto:{{supportEmail}}" style="color: #007bff;">{{supportEmail}}</a>
+      </p>
+    </div>
+
+    <!-- Call to Action -->
+    <div style="text-align: center; margin-bottom: 25px;">
+      <a href="{{dashboardUrl}}" style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+        Go to Dashboard
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <div style="border-top: 1px solid #dee2e6; padding-top: 20px; text-align: center;">
+      <p style="margin: 0; color: #6c757d; font-size: 14px;">
+        This is a personal message from the {{appName}} team.
+      </p>
+      <p style="margin: 10px 0 0 0; color: #6c757d; font-size: 12px;">
+        © {{year}} {{appName}}. All rights reserved.
+      </p>
+    </div>
+  </div>
+</div>
