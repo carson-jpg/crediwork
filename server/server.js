@@ -906,6 +906,25 @@ app.post('/api/admin/tasks', authenticateToken, requireAdmin, async (req, res) =
   }
 });
 
+// Get a specific task by ID
+app.get('/api/admin/tasks/:taskId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+
+    const task = await Task.findById(taskId)
+      .populate('createdBy', 'firstName lastName email');
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json(task);
+  } catch (error) {
+    console.error('Fetch task error:', error);
+    res.status(500).json({ error: 'Failed to fetch task' });
+  }
+});
+
 // Get all tasks with filtering and pagination
 app.get('/api/admin/tasks', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -1082,13 +1101,22 @@ app.put('/api/admin/task-submissions/:submissionId', authenticateToken, requireA
 
     if (action === 'approve') {
       updateData.status = 'approved';
-      // Add earning amount to user's wallet (this would need wallet integration)
+      // Add earning amount to user's wallet
+      const submission = await TaskSubmission.findById(submissionId).populate('taskId');
+      if (submission) {
+        const wallet = await Wallet.findOne({ userId: submission.userId });
+        if (wallet) {
+          wallet.balance += submission.taskId.reward;
+          wallet.totalEarned += submission.taskId.reward;
+          await wallet.save();
+        }
+      }
     } else if (action === 'reject') {
       updateData.status = 'rejected';
       updateData.reviewData.rejectionReason = rejectionReason;
     }
 
-    const submission = await UserTask.findByIdAndUpdate(submissionId, updateData, { new: true })
+    const submission = await TaskSubmission.findByIdAndUpdate(submissionId, updateData, { new: true })
       .populate('userId', 'firstName lastName email')
       .populate('taskId', 'title reward');
 

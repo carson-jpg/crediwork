@@ -85,7 +85,7 @@ export const TaskReview: React.FC = () => {
 
       const reviewData = {
         action: reviewAction,
-        ...(reviewAction === 'reject' && { rejectionReason })
+        ...(reviewAction === 'reject' && { rejectionReason: rejectionReason })
       };
 
       await axios.put(`${baseURL}/api/admin/task-submissions/${selectedSubmission._id}`, reviewData, { headers });
@@ -133,11 +133,15 @@ export const TaskReview: React.FC = () => {
     }
   };
 
+  const getRequiredProofType = (submission: TaskSubmission) => {
+    return submission.taskId?.requiredProofType || 'text';
+  };
+
   const filteredSubmissions = submissions.filter(submission =>
     submission.userId.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     submission.userId.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     submission.userId.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    submission.taskId.title.toLowerCase().includes(searchTerm.toLowerCase())
+    (submission.taskId?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -179,7 +183,7 @@ export const TaskReview: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {filteredSubmissions.map((submission) => {
-            const ProofIcon = getProofIcon(submission.taskId.requiredProofType);
+            const ProofIcon = getProofIcon(getRequiredProofType(submission));
 
             return (
               <div key={submission._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -187,7 +191,7 @@ export const TaskReview: React.FC = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{submission.taskId.title}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">{submission.taskId?.title || 'Unknown Task'}</h3>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(submission.status || '')}`}>
                           {(submission.status || '').charAt(0).toUpperCase() + (submission.status || '').slice(1)}
                         </span>
@@ -203,7 +207,7 @@ export const TaskReview: React.FC = () => {
                           <span>Submitted {(submission.submissionData && submission.submissionData.submittedAt) ? new Date(submission.submissionData.submittedAt).toLocaleDateString() : 'Unknown'}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <span className="font-medium">Reward: KES {submission.taskId.reward}</span>
+                          <span className="font-medium">Reward: KES {submission.taskId?.reward || 0}</span>
                         </div>
                       </div>
 
@@ -212,15 +216,15 @@ export const TaskReview: React.FC = () => {
                         <div className="flex items-center space-x-2 mb-2">
                           <ProofIcon className="h-5 w-5 text-gray-600" />
                         <span className="font-medium text-gray-900">
-                          {(submission.taskId.requiredProofType ? submission.taskId.requiredProofType.charAt(0).toUpperCase() + submission.taskId.requiredProofType.slice(1) : 'Unknown')} Proof
+                          {(getRequiredProofType(submission) ? getRequiredProofType(submission).charAt(0).toUpperCase() + getRequiredProofType(submission).slice(1) : 'Unknown')} Proof
                         </span>
                         </div>
 
-                        {submission.taskId.requiredProofType === 'text' && submission.submissionData.proofText && (
+                        {getRequiredProofType(submission) === 'text' && submission.submissionData.proofText && (
                           <p className="text-gray-700">{submission.submissionData.proofText}</p>
                         )}
 
-                        {submission.taskId.requiredProofType === 'link' && submission.submissionData.proofLink && (
+                        {getRequiredProofType(submission) === 'link' && submission.submissionData.proofLink && (
                           <a
                             href={submission.submissionData.proofLink}
                             target="_blank"
@@ -231,7 +235,7 @@ export const TaskReview: React.FC = () => {
                           </a>
                         )}
 
-                        {(submission.taskId.requiredProofType === 'file' || submission.taskId.requiredProofType === 'image') && submission.submissionData.proofFile && (
+                        {(getRequiredProofType(submission) === 'file' || getRequiredProofType(submission) === 'image') && submission.submissionData.proofFile && (
                           <div className="text-gray-700">
                             File submitted: {submission.submissionData.proofFile}
                           </div>
@@ -265,7 +269,7 @@ export const TaskReview: React.FC = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    {submission.status === 'completed' && (
+                    {submission.status === 'pending' && (
                       <div className="flex items-center space-x-2 ml-4">
                         <button
                           onClick={() => openReviewModal(submission, 'approve')}
@@ -338,13 +342,13 @@ export const TaskReview: React.FC = () => {
 
             <div className="mb-4">
               <p className="text-gray-600 mb-2">
-                <strong>Task:</strong> {selectedSubmission.taskId.title}
+                <strong>Task:</strong> {selectedSubmission.taskId?.title || 'Unknown Task'}
               </p>
               <p className="text-gray-600 mb-2">
                 <strong>User:</strong> {selectedSubmission.userId.firstName} {selectedSubmission.userId.lastName}
               </p>
               <p className="text-gray-600">
-                <strong>Reward:</strong> KES {selectedSubmission.taskId.reward}
+                <strong>Reward:</strong> KES {selectedSubmission.taskId?.reward || 0}
               </p>
             </div>
 
