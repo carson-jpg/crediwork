@@ -15,10 +15,26 @@ export const WithdrawalManagement: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [currentPage] = useState(1);
+  const [approvedTodayCount, setApprovedTodayCount] = useState<number | null>(null);
 
   useEffect(() => {
     fetchWithdrawals();
+    fetchApprovedTodayCount();
   }, [selectedStatus, currentPage]);
+
+  const fetchApprovedTodayCount = async () => {
+    try {
+      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await axios.get(`${baseURL}/api/admin/withdrawals/approved/today/count`, { headers });
+      setApprovedTodayCount(response.data.count);
+    } catch (error) {
+      console.error('Error fetching approved today count:', error);
+      setApprovedTodayCount(0);
+    }
+  };
 
   const fetchWithdrawals = async () => {
     try {
@@ -117,7 +133,9 @@ export const WithdrawalManagement: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Approved Today</p>
-              <p className="text-2xl font-bold text-emerald-600">24</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {approvedTodayCount != null ? approvedTodayCount.toLocaleString() : 'Loading...'}
+              </p>
             </div>
             <Check className="h-8 w-8 text-emerald-600" />
           </div>
