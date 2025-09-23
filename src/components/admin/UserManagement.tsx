@@ -140,6 +140,43 @@ export const UserManagement: React.FC = () => {
     setSelectedUserId(null);
   };
 
+  const handleExportUsers = () => {
+    if (users.length === 0) {
+      alert('No users to export');
+      return;
+    }
+
+    // Define CSV headers
+    const headers = ['Full Name', 'Email', 'Phone', 'Package', 'Status', 'Total Earned', 'Joined Date'];
+
+    // Convert users data to CSV rows
+    const csvData = users.map(user => [
+      user.fullName,
+      user.email,
+      user.phone,
+      `Package ${user.package}`,
+      user.status.charAt(0).toUpperCase() + user.status.slice(1),
+      user.totalEarned,
+      user.createdAt.toLocaleDateString()
+    ]);
+
+    // Combine headers and data
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    // Create and download the CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'users_export.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Users are now filtered server-side, so we use the fetched users directly
   const filteredUsers = users;
 
@@ -152,7 +189,10 @@ export const UserManagement: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+          <button
+            onClick={handleExportUsers}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
             Export Users
           </button>
         </div>

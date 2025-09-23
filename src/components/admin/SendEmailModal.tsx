@@ -10,6 +10,21 @@ interface SendEmailModalProps {
   userName?: string;
 }
 
+interface FormErrors {
+  subject?: string;
+  message?: string;
+  general?: string;
+}
+
+const EMAIL_TEMPLATES = [
+  { value: 'custom-email', label: 'Custom Email' },
+  { value: 'payment-success', label: 'Payment Success' },
+  { value: 'payment-failed', label: 'Payment Failed' },
+  { value: 'withdrawal-submitted', label: 'Withdrawal Submitted' },
+  { value: 'withdrawal-approved', label: 'Withdrawal Approved' },
+  { value: 'withdrawal-rejected', label: 'Withdrawal Rejected' },
+] as const;
+
 export const SendEmailModal: React.FC<SendEmailModalProps> = ({
   isOpen,
   onClose,
@@ -21,36 +36,73 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
   const [message, setMessage] = useState('');
   const [template, setTemplate] = useState('custom-email');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!subject.trim()) {
+      newErrors.subject = 'Subject is required';
+    } else if (subject.length > 100) {
+      newErrors.subject = 'Subject must be less than 100 characters';
+    }
+
+    if (!message.trim()) {
+      newErrors.message = 'Message is required';
+    } else if (message.length > 2000) {
+      newErrors.message = 'Message must be less than 2000 characters';
+    }
+
+    if (!userId) {
+      newErrors.general = 'User ID is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const getErrorMessage = (error: any): string => {
+    if (error.response?.status === 401) return 'Authentication failed. Please login again.';
+    if (error.response?.status === 403) return 'Admin access required.';
+    if (error.response?.status === 404) return 'User not found.';
+    if (error.response?.status >= 500) return 'Server error. Please try again later.';
+    return error.response?.data?.error || error.message || 'Failed to send email';
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    if (type === 'success') {
+      setSuccessMessage(message);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } else {
+      setErrors({ general: message });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!subject.trim() || !message.trim()) {
-      setError('Subject and message are required');
-      return;
-    }
-
-    if (!userId) {
-      setError('User ID is required');
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    setErrors({});
+    setSuccessMessage('');
 
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
       const token = localStorage.getItem('token');
 
-      console.log('Debug info:', {
-        baseURL,
-        userId,
-        token: token ? 'Present' : 'Missing',
-        subject: subject.trim(),
-        message: message.trim(),
-        template
-      });
+      if (import.meta.env.DEV) {
+        console.log('Sending email request:', {
+          baseURL,
+          userId,
+          subject: subject.trim(),
+          message: message.trim(),
+          template
+        });
+      }
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -67,21 +119,14 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
         { headers }
       );
 
-      console.log('Email sent successfully:', response.data);
       if (response.status === 200) {
-        // Success
-        alert('Email sent successfully!');
+        showNotification('Email sent successfully!', 'success');
         handleClose();
       }
     } catch (error: any) {
       console.error('Send email error:', error);
-      console.error('Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-      setError(error.response?.data?.error || error.message || 'Failed to send email');
+      const errorMessage = getErrorMessage(error);
+      showNotification(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -91,8 +136,18 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
     setSubject('');
     setMessage('');
     setTemplate('custom-email');
-    setError('');
+    setErrors({});
+    setSuccessMessage('');
     onClose();
+  };
+
+  const handleInputChange = (setter: (value: string) => void, field: keyof FormErrors) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setter(e.target.value);
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   if (!isOpen) return null;
@@ -116,10 +171,18 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close modal"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+            <p className="text-sm text-green-600">{successMessage}</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -150,11 +213,18 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
               type="text"
               id="subject"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={handleInputChange(setSubject, 'subject')}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.subject ? 'border-red-300' : 'border-gray-300'
+              }`}
               placeholder="Enter email subject..."
               required
+              aria-label="Email subject"
+              maxLength={100}
             />
+            {errors.subject && (
+              <p className="text-sm text-red-600 mt-1">{errors.subject}</p>
+            )}
           </div>
 
           {/* Template Selection */}
@@ -167,13 +237,13 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
               value={template}
               onChange={(e) => setTemplate(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Email template selection"
             >
-              <option value="custom-email">Custom Email</option>
-              <option value="payment-success">Payment Success</option>
-              <option value="payment-failed">Payment Failed</option>
-              <option value="withdrawal-submitted">Withdrawal Submitted</option>
-              <option value="withdrawal-approved">Withdrawal Approved</option>
-              <option value="withdrawal-rejected">Withdrawal Rejected</option>
+              {EMAIL_TEMPLATES.map((templateOption) => (
+                <option key={templateOption.value} value={templateOption.value}>
+                  {templateOption.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -185,21 +255,33 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
             <textarea
               id="message"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleInputChange(setMessage, 'message')}
               rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.message ? 'border-red-300' : 'border-gray-300'
+              }`}
               placeholder="Enter your message here..."
               required
+              aria-label="Email message"
+              maxLength={2000}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              You can use basic formatting. The message will be sent as plain text.
-            </p>
+            <div className="flex justify-between items-center mt-1">
+              <p className="text-xs text-gray-500">
+                You can use basic formatting. The message will be sent as plain text.
+              </p>
+              <p className="text-xs text-gray-400">
+                {message.length}/2000
+              </p>
+            </div>
+            {errors.message && (
+              <p className="text-sm text-red-600 mt-1">{errors.message}</p>
+            )}
           </div>
 
-          {/* Error Message */}
-          {error && (
+          {/* General Error Message */}
+          {errors.general && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600">{errors.general}</p>
             </div>
           )}
 
