@@ -42,6 +42,16 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
       const token = localStorage.getItem('token');
+
+      console.log('Debug info:', {
+        baseURL,
+        userId,
+        token: token ? 'Present' : 'Missing',
+        subject: subject.trim(),
+        message: message.trim(),
+        template
+      });
+
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -57,6 +67,7 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
         { headers }
       );
 
+      console.log('Email sent successfully:', response.data);
       if (response.status === 200) {
         // Success
         alert('Email sent successfully!');
@@ -64,7 +75,13 @@ export const SendEmailModal: React.FC<SendEmailModalProps> = ({
       }
     } catch (error: any) {
       console.error('Send email error:', error);
-      setError(error.response?.data?.error || 'Failed to send email');
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      setError(error.response?.data?.error || error.message || 'Failed to send email');
     } finally {
       setIsLoading(false);
     }
