@@ -16,6 +16,7 @@ import { TaskManagement } from './components/admin/TaskManagement';
 import { TaskReview } from './components/admin/TaskReview';
 import { TaskCreate } from './components/admin/TaskCreate';
 import { TaskAssign } from './components/admin/TaskAssign';
+import { SettingsManagement } from './components/admin/SettingsManagement';
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -123,13 +124,13 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/admin/settings" 
+      <Route
+        path="/admin/settings"
         element={
           <ProtectedRoute requireRole="admin">
-            <div className="p-6 text-center text-gray-600">Settings coming soon</div>
+            <SettingsManagement />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* Default Redirects */}

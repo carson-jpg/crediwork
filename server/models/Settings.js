@@ -16,7 +16,7 @@ const settingsSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['package', 'withdrawal', 'task', 'system', 'referral'],
+    enum: ['package', 'withdrawal', 'task', 'system', 'referral', 'general', 'payment', 'notification', 'security'],
     required: true
   }
 }, {

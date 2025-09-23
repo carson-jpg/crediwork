@@ -27,6 +27,7 @@ import Withdrawal from './models/Withdrawal.js';
 // Import services
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail, sendWithdrawalSubmittedEmail, sendWithdrawalApprovedEmail, sendWithdrawalRejectedEmail } from './services/emailService.js';
 import { initiateSTKPush } from './services/mpesaService.js';
+import { getAllSettings, getSettingsByCategory, createSetting, updateSetting, deleteSetting } from './services/settingsService.js';
 
 // Import middleware
 import { authenticateToken, requireAdmin } from './middleware/auth.js';
@@ -964,6 +965,80 @@ app.put('/api/admin/task-submissions/:submissionId', authenticateToken, requireA
   } catch (error) {
     console.error('Submission review error:', error);
     res.status(500).json({ error: 'Failed to review submission' });
+  }
+});
+
+// Settings Management Endpoints
+
+// Get all settings
+app.get('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    let settings;
+    if (category && category !== 'all') {
+      settings = await getSettingsByCategory(category);
+    } else {
+      settings = await getAllSettings();
+    }
+
+    res.json({ settings });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch settings' });
+  }
+});
+
+// Create new setting
+app.post('/api/admin/settings', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { key, value, description, category } = req.body;
+
+    if (!key || !value || !category) {
+      return res.status(400).json({ error: 'Key, value, and category are required' });
+    }
+
+    const newSetting = await createSetting({ key, value, description, category });
+    res.status(201).json({
+      message: 'Setting created successfully',
+      setting: newSetting
+    });
+  } catch (error) {
+    console.error('Create setting error:', error);
+    res.status(500).json({ error: error.message || 'Failed to create setting' });
+  }
+});
+
+// Update setting
+app.put('/api/admin/settings/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { key, value, description, category } = req.body;
+
+    const updatedSetting = await updateSetting(id, { key, value, description, category });
+    res.json({
+      message: 'Setting updated successfully',
+      setting: updatedSetting
+    });
+  } catch (error) {
+    console.error('Update setting error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update setting' });
+  }
+});
+
+// Delete setting
+app.delete('/api/admin/settings/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedSetting = await deleteSetting(id);
+    res.json({
+      message: 'Setting deleted successfully',
+      setting: deletedSetting
+    });
+  } catch (error) {
+    console.error('Delete setting error:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete setting' });
   }
 });
 
