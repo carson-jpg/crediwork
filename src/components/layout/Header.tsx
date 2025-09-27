@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bell, LogOut, User, Wallet, Menu } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
+import NotificationBell from '../user/NotificationBell';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -38,10 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               )}
             </div>
 
-            <button className="relative p-2 text-gray-400 hover:text-gray-500 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
-            </button>
+            <NotificationBell />
 
             <button
               onClick={logout}

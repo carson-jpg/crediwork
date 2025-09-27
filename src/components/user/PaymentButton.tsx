@@ -95,7 +95,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ packagePrice, pack
 
   return (
     <div style={styles.container}>
-      <h2>M-Pesa STK Push</h2>
+      <h2>Make Your Payment</h2>
       <form id="stkForm" style={styles.form} onSubmit={handleSubmit}>
         <label htmlFor="phone" style={styles.label}>Phone Number (254...):</label>
         <input

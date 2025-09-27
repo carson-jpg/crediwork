@@ -28,6 +28,7 @@ import Withdrawal from './models/Withdrawal.js';
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail, sendWithdrawalSubmittedEmail, sendWithdrawalApprovedEmail, sendWithdrawalRejectedEmail } from './services/emailService.js';
 import { initiateSTKPush } from './services/mpesaService.js';
 import { getAllSettings, getSettingsByCategory, createSetting, updateSetting, deleteSetting } from './services/settingsService.js';
+import { createNotification, getUserNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification, createBulkNotifications } from './services/notificationService.js';
 
 // Import middleware
 import { authenticateToken, requireAdmin } from './middleware/auth.js';
@@ -130,10 +131,10 @@ app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
       assignedDate: { $gte: today, $lt: tomorrow }
     });
 
-    // Get recent activity (last 5 task completions)
-    const recentActivity = await UserTask.find({
+    // Get recent activity (last 5 approved task submissions)
+    const recentActivity = await TaskSubmission.find({
       userId,
-      status: 'completed'
+      status: 'approved'
     }).populate('taskId', 'title reward')
     .sort({ updatedAt: -1 })
     .limit(5)
@@ -239,17 +240,26 @@ app.post('/api/user/tasks/:taskId/submit', authenticateToken, async (req, res) =
     await submission.save();
 
     // Update user task status
-    userTask.status = 'completed';
+    userTask.status = 'submitted';
     userTask.submissionId = submission._id;
     await userTask.save();
 
-    // Add earnings to wallet
-    const wallet = await Wallet.findOne({ userId });
-    if (wallet) {
+    // Add provisional reward to user's wallet balance
+    let wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      wallet = new Wallet({ 
+        userId, 
+        balance: task.reward, 
+        totalEarned: 0, 
+        totalWithdrawn: 0 
+      });
+      await wallet.save();
+    } else {
       wallet.balance += task.reward;
-      wallet.totalEarned += task.reward;
       await wallet.save();
     }
+
+    // Note: Reward added provisionally to balance; will be deducted if rejected, totalEarned updated if approved
 
     res.json({
       message: 'Task submitted successfully',
@@ -476,7 +486,7 @@ app.get('/api/admin/earnings/total', authenticateToken, requireAdmin, async (req
 app.get('/api/admin/tasks/completion-rate', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const totalTasks = await UserTask.countDocuments();
-    const completedTasks = await UserTask.countDocuments({ status: 'approved' });
+    const completedTasks = await UserTask.countDocuments({ status: 'completed' });
 
     const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
     res.json({ completionRate: Math.round(completionRate * 100) / 100 });
@@ -503,7 +513,7 @@ app.get('/api/admin/quick-actions', authenticateToken, requireAdmin, async (req,
     const [pendingUsers, pendingWithdrawals, pendingTasks] = await Promise.all([
       User.countDocuments({ status: 'pending' }),
       Withdrawal.countDocuments({ status: 'pending' }),
-      UserTask.countDocuments({ status: 'completed' })
+      UserTask.countDocuments({ status: 'submitted' })
     ]);
 
     res.json({
@@ -1101,19 +1111,42 @@ app.put('/api/admin/task-submissions/:submissionId', authenticateToken, requireA
 
     if (action === 'approve') {
       updateData.status = 'approved';
-      // Add earning amount to user's wallet
       const submission = await TaskSubmission.findById(submissionId).populate('taskId');
       if (submission) {
         const wallet = await Wallet.findOne({ userId: submission.userId });
         if (wallet) {
-          wallet.balance += submission.taskId.reward;
           wallet.totalEarned += submission.taskId.reward;
           await wallet.save();
         }
+        // Update UserTask status to completed
+        await UserTask.findOneAndUpdate(
+          { userId: submission.userId, submissionId: submissionId },
+          { status: 'completed' }
+        );
       }
     } else if (action === 'reject') {
       updateData.status = 'rejected';
       updateData.reviewData.rejectionReason = rejectionReason;
+      const submission = await TaskSubmission.findById(submissionId).populate('taskId');
+      if (submission) {
+        console.log(`Rejecting submission ${submissionId}, user ${submission.userId}, reward ${submission.taskId.reward}`);
+        const wallet = await Wallet.findOne({ userId: submission.userId });
+        if (wallet) {
+          console.log(`Current balance: ${wallet.balance}`);
+          wallet.balance = Math.max(0, wallet.balance - submission.taskId.reward);
+          console.log(`New balance: ${wallet.balance}`);
+          await wallet.save();
+          console.log('Wallet saved');
+        } else {
+          console.log('Wallet not found for user', submission.userId);
+        }
+        await UserTask.findOneAndUpdate(
+          { userId: submission.userId, submissionId: submissionId },
+          { status: 'rejected' }
+        );
+      } else {
+        console.log('Submission not found', submissionId);
+      }
     }
 
     const submission = await TaskSubmission.findByIdAndUpdate(submissionId, updateData, { new: true })
@@ -1205,6 +1238,115 @@ app.delete('/api/admin/settings/:id', authenticateToken, requireAdmin, async (re
   } catch (error) {
     console.error('Delete setting error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete setting' });
+  }
+});
+
+// Notification Management Endpoints
+
+// Get user notifications
+app.get('/api/user/notifications', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const notifications = await getUserNotifications(userId, parseInt(limit), skip);
+    res.json(notifications);
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch notifications' });
+  }
+});
+
+// Get unread notification count
+app.get('/api/user/notifications/unread-count', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const count = await getUnreadCount(userId);
+    res.json({ count });
+  } catch (error) {
+    console.error('Get unread count error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch unread count' });
+  }
+});
+
+// Mark notification as read
+app.put('/api/user/notifications/:notificationId/read', authenticateToken, async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const userId = req.user._id;
+
+    const notification = await markAsRead(notificationId, userId);
+    res.json({
+      message: 'Notification marked as read',
+      notification
+    });
+  } catch (error) {
+    console.error('Mark as read error:', error);
+    res.status(500).json({ error: error.message || 'Failed to mark notification as read' });
+  }
+});
+
+// Mark all notifications as read
+app.put('/api/user/notifications/mark-all-read', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const result = await markAllAsRead(userId);
+    res.json(result);
+  } catch (error) {
+    console.error('Mark all as read error:', error);
+    res.status(500).json({ error: error.message || 'Failed to mark all notifications as read' });
+  }
+});
+
+// Delete notification
+app.delete('/api/user/notifications/:notificationId', authenticateToken, async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const userId = req.user._id;
+
+    const result = await deleteNotification(notificationId, userId);
+    res.json(result);
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete notification' });
+  }
+});
+
+// Admin: Create notification
+app.post('/api/admin/notifications', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { title, message, type, userIds, sendToAll } = req.body;
+
+    if (!title || !message || !type) {
+      return res.status(400).json({ error: 'Title, message, and type are required' });
+    }
+
+    if (!sendToAll && (!userIds || userIds.length === 0)) {
+      return res.status(400).json({ error: 'Either sendToAll must be true or userIds must be provided' });
+    }
+
+    const notificationData = {
+      title,
+      message,
+      type,
+      createdBy: req.user._id
+    };
+
+    let result;
+    if (sendToAll) {
+      result = await createBulkNotifications(notificationData, null);
+    } else {
+      result = await createBulkNotifications(notificationData, userIds);
+    }
+
+    res.status(201).json({
+      message: 'Notifications created successfully',
+      ...result
+    });
+  } catch (error) {
+    console.error('Create notification error:', error);
+    res.status(500).json({ error: error.message || 'Failed to create notification' });
   }
 });
 

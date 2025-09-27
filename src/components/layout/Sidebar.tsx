@@ -8,6 +8,7 @@ import {
   Settings,
   BarChart3,
   CreditCard,
+  Bell,
   X
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks' },
     { to: '/admin/withdrawals', icon: CreditCard, label: 'Withdrawals' },
+    { to: '/admin/notifications', icon: Bell, label: 'Notifications' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' },
   ];
 

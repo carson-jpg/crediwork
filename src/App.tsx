@@ -17,6 +17,7 @@ import { TaskReview } from './components/admin/TaskReview';
 import { TaskCreate } from './components/admin/TaskCreate';
 import { TaskAssign } from './components/admin/TaskAssign';
 import { SettingsManagement } from './components/admin/SettingsManagement';
+import NotificationManagement from './components/admin/NotificationManagement';
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -129,6 +130,14 @@ const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute requireRole="admin">
             <SettingsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/notifications"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <NotificationManagement />
           </ProtectedRoute>
         }
       />
