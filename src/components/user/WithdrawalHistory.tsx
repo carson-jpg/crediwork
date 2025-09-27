@@ -23,8 +23,9 @@ export const WithdrawalHistory: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com');
 
-      const response = await axios.get(`/api/user/withdrawals?page=${page}&limit=10`, { headers });
+      const response = await axios.get(`${baseURL}/api/user/withdrawals?page=${page}&limit=10`, { headers });
       setWithdrawals(response.data.withdrawals);
       setTotalPages(Math.ceil(response.data.total / 10));
     } catch (err) {
