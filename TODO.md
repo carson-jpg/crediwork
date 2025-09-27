@@ -1,9 +1,10 @@
-# TODO: Fix 404 API Errors and Vite Asset
+# TODO: Fix API URL Configuration for Environment Variables
 
 ## Steps to Complete
-- [x] Add getAllNotifications function to server/services/notificationService.js
-- [x] Add GET /api/admin/notifications route to server/server.js
-- [x] Create public/vite.svg file with Vite logo SVG
-- [x] Update src/components/admin/NotificationManagement.tsx to use the new getAllNotifications API
-- [x] Update src/hooks/useNotifications.ts to include admin notification hooks
-- [x] Test the implementation
+- [x] Update AdminDashboard.tsx to use VITE_API_URL
+- [x] Update useDashboardData.ts to use VITE_API_URL
+- [x] Update useWalletData.ts to use VITE_API_URL
+- [x] Update useTaskData.ts to use VITE_API_URL
+- [x] Update useNotifications.ts to use VITE_API_URL
+- [x] Update usePaymentStatus.ts to use VITE_API_URL
+- [ ] Test the implementation
