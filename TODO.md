@@ -7,4 +7,4 @@
 - [x] Update useTaskData.ts to use VITE_API_URL
 - [x] Update useNotifications.ts to use VITE_API_URL
 - [x] Update usePaymentStatus.ts to use VITE_API_URL
-- [ ] Test the implementation
+- [x] Test the implementation

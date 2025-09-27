@@ -29,7 +29,7 @@ export const usePaymentStatus = (): UsePaymentStatusReturn => {
   const fetchPaymentStatus = useCallback(async (id: string): Promise<PaymentStatus | null> => {
     try {
       const token = localStorage.getItem('token');
-      const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+      const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com');
       const response = await fetch(`${baseURL}/api/payment/status/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,

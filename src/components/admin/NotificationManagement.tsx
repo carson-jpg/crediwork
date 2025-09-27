@@ -36,7 +36,8 @@ const NotificationManagement: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/users?status=active&limit=100', {
+      const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com');
+      const response = await fetch(`${baseURL}/api/admin/users?status=active&limit=100`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

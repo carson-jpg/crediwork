@@ -15,7 +15,7 @@ export const useWalletData = (user: User | null) => {
     const fetchWalletData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+        const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com');
         const response = await fetch(`${baseURL}/api/user/wallet`, {
           headers: {
             'Authorization': `Bearer ${token}`,

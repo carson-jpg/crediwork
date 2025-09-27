@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com');
 
 interface Notification {
   _id: string;
@@ -34,7 +34,7 @@ export const useNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/user/notifications?page=${page}&limit=${limit}`, {
+      const response = await fetch(`${baseURL}/api/user/notifications?page=${page}&limit=${limit}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -59,7 +59,7 @@ export const useNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/user/notifications/unread-count`, {
+      const response = await fetch(`${baseURL}/api/user/notifications/unread-count`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -80,7 +80,7 @@ export const useNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/user/notifications/${notificationId}/read`, {
+      const response = await fetch(`${baseURL}/api/user/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -108,7 +108,7 @@ export const useNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/user/notifications/mark-all-read`, {
+      const response = await fetch(`${baseURL}/api/user/notifications/mark-all-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -132,7 +132,7 @@ export const useNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/user/notifications/${notificationId}`, {
+      const response = await fetch(`${baseURL}/api/user/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -205,7 +205,7 @@ export const useAdminNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/notifications`, {
+      const response = await fetch(`${baseURL}/api/admin/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -230,7 +230,7 @@ export const useAdminNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/notifications/${notificationId}`, {
+      const response = await fetch(`${baseURL}/api/admin/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -263,7 +263,7 @@ export const useAdminNotifications = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/notifications`, {
+      const response = await fetch(`${baseURL}/api/admin/notifications`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
