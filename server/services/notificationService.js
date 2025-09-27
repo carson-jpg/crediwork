@@ -110,6 +110,37 @@ export const deleteNotification = async (notificationId, userId) => {
   }
 };
 
+// Get all notifications for admin (with pagination and filters)
+export const getAllNotifications = async (page = 1, limit = 10, filters = {}) => {
+  try {
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    let query = {};
+    if (filters.type) query.type = filters.type;
+    if (filters.isRead !== undefined) query.isRead = filters.isRead;
+    if (filters.userId) query.userId = filters.userId;
+
+    const [notifications, total] = await Promise.all([
+      Notification.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('userId', 'firstName lastName email'),
+      Notification.countDocuments(query)
+    ]);
+
+    return {
+      notifications,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit))
+    };
+  } catch (error) {
+    console.error('Error fetching all notifications:', error);
+    throw error;
+  }
+};
+
 // Create notification for multiple users (broadcast)
 export const createBulkNotifications = async (userIds, type, title, message, relatedId = null, relatedModel = null) => {
   try {

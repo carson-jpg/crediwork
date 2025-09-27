@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Users, User } from 'lucide-react';
+import { Send, Users, User, Bell, Clock, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAdminNotifications } from '../../hooks/useNotifications';
 
 interface User {
   _id: string;
@@ -22,6 +23,8 @@ const NotificationManagement: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { notifications, loading: loadingNotifications, fetchNotifications, deleteNotification, sendNotification } = useAdminNotifications();
 
   useEffect(() => {
     if (!sendToAll) {
@@ -78,36 +81,34 @@ const NotificationManagement: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/notifications', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          message: message.trim(),
-          type,
-          sendToAll,
-          userIds: sendToAll ? undefined : selectedUsers
-        })
-      });
+      const notificationData = {
+        title: title.trim(),
+        message: message.trim(),
+        type,
+        sendToAll,
+        userIds: sendToAll ? undefined : selectedUsers
+      };
 
-      if (response.ok) {
-        const data = await response.json();
-        setSuccess(`Notification sent successfully to ${data.totalRecipients || 'all users'} users`);
-        setTitle('');
-        setMessage('');
-        setSelectedUsers([]);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to send notification');
-      }
+      const data = await sendNotification(notificationData);
+      setSuccess(`Notification sent successfully to ${data.totalRecipients || 'all users'} users`);
+      setTitle('');
+      setMessage('');
+      setSelectedUsers([]);
     } catch (err) {
       setError('Failed to send notification');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this notification?')) return;
+
+    try {
+      await deleteNotification(id);
+      setSuccess('Notification deleted successfully');
+    } catch (err) {
+      setError('Failed to delete notification');
     }
   };
 
@@ -276,6 +277,74 @@ const NotificationManagement: React.FC = () => {
               </div>
             </div>
           </form>
+        </div>
+
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Notifications</h2>
+            <button
+              onClick={fetchNotifications}
+              disabled={loadingNotifications}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
+            >
+              {loadingNotifications ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+
+          {loadingNotifications ? (
+            <div className="text-center py-8 text-gray-500">Loading notifications...</div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No notifications found.</div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipients</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {notifications.map((notification) => (
+                      <tr key={notification._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {notification.title}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            notification.type === 'success' ? 'bg-green-100 text-green-800' :
+                            notification.type === 'error' ? 'bg-red-100 text-red-800' :
+                            notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {notification.type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(notification.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {notification.sendToAll ? 'All users' : `${notification.userIds?.length || 0} users`}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleDelete(notification._id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

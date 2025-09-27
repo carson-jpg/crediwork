@@ -172,3 +172,129 @@ export const useNotifications = () => {
     deleteNotification
   };
 };
+
+// Admin notification hooks
+interface AdminNotification {
+  _id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  sendToAll: boolean;
+  userIds?: string[];
+  createdAt: string;
+}
+
+interface AdminNotificationsResponse {
+  notifications: AdminNotification[];
+  total: number;
+}
+
+export const useAdminNotifications = () => {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchNotifications = async () => {
+    if (!user || user.role !== 'admin') return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/notifications', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch admin notifications');
+      }
+
+      const data: AdminNotificationsResponse = await response.json();
+      setNotifications(data.notifications);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    if (!user || user.role !== 'admin') return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setNotifications(prev =>
+          prev.filter(notification => notification._id !== notificationId)
+        );
+      } else {
+        throw new Error('Failed to delete notification');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete notification');
+    }
+  };
+
+  const sendNotification = async (notificationData: {
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    sendToAll: boolean;
+    userIds?: string[];
+  }) => {
+    if (!user || user.role !== 'admin') return;
+
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(notificationData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send notification');
+      }
+
+      const data = await response.json();
+      fetchNotifications(); // Refresh the list
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send notification');
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      fetchNotifications();
+    }
+  }, [user]);
+
+  return {
+    notifications,
+    loading,
+    error,
+    fetchNotifications,
+    deleteNotification,
+    sendNotification
+  };
+};

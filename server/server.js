@@ -28,7 +28,7 @@ import Withdrawal from './models/Withdrawal.js';
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail, sendWithdrawalSubmittedEmail, sendWithdrawalApprovedEmail, sendWithdrawalRejectedEmail } from './services/emailService.js';
 import { initiateSTKPush } from './services/mpesaService.js';
 import { getAllSettings, getSettingsByCategory, createSetting, updateSetting, deleteSetting } from './services/settingsService.js';
-import { createNotification, getUserNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification, createBulkNotifications } from './services/notificationService.js';
+import { createNotification, getUserNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification, createBulkNotifications, getAllNotifications } from './services/notificationService.js';
 
 // Import middleware
 import { authenticateToken, requireAdmin } from './middleware/auth.js';
@@ -1347,6 +1347,25 @@ app.post('/api/admin/notifications', authenticateToken, requireAdmin, async (req
   } catch (error) {
     console.error('Create notification error:', error);
     res.status(500).json({ error: error.message || 'Failed to create notification' });
+  }
+});
+
+// Admin: Get all notifications
+app.get('/api/admin/notifications', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, type, isRead, userId } = req.query;
+
+    const filters = {};
+    if (type) filters.type = type;
+    if (isRead !== undefined) filters.isRead = isRead === 'true';
+    if (userId) filters.userId = userId;
+
+    const result = await getAllNotifications(parseInt(page), parseInt(limit), filters);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get all notifications error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch notifications' });
   }
 });
 
