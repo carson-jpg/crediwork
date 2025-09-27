@@ -160,6 +160,53 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
+// User dashboard endpoint (alternative path)
+app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get user wallet
+    const wallet = await Wallet.findOne({ userId }).select('balance totalEarned totalWithdrawn lastUpdated');
+
+    // Get user's tasks for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const userTasks = await UserTask.find({
+      userId,
+      assignedDate: { $gte: today, $lt: tomorrow }
+    }).populate('taskId').select('taskId status assignedDate dueDate');
+
+    // Get completed tasks count for today
+    const completedToday = await UserTask.countDocuments({
+      userId,
+      status: 'completed',
+      assignedDate: { $gte: today, $lt: tomorrow }
+    });
+
+    // Get recent activity (last 5 approved task submissions)
+    const recentActivity = await TaskSubmission.find({
+      userId,
+      status: 'approved'
+    }).populate('taskId', 'title reward')
+    .sort({ updatedAt: -1 })
+    .limit(5)
+    .select('taskId updatedAt');
+
+    res.json({
+      wallet: wallet || { balance: 0, totalEarned: 0, totalWithdrawn: 0, lastUpdated: new Date() },
+      todaysTasks: userTasks,
+      completedToday,
+      recentActivity
+    });
+  } catch (error) {
+    console.error('Dashboard data error:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+  }
+});
+
 app.get('/api/user/wallet', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
@@ -368,6 +415,91 @@ app.post('/api/withdrawals', authenticateToken, async (req, res) => {
   }
 });
 
+// User withdrawal endpoint (alternative path)
+app.post('/api/user/withdrawals', authenticateToken, async (req, res) => {
+  try {
+    const { amount, paymentMethod, paymentDetails } = req.body;
+    const userId = req.user._id;
+
+    // Get user and wallet data
+    const user = await User.findById(userId);
+    const wallet = await Wallet.findOne({ userId });
+
+    if (!user || !wallet) {
+      return res.status(404).json({ error: 'User or wallet not found' });
+    }
+
+    // Check if user is active
+    if (user.status !== 'active') {
+      return res.status(400).json({ error: 'Account must be active to withdraw' });
+    }
+
+    // Check withdrawal eligibility (10 days after activation)
+    const daysSinceActivation = Math.floor(
+      (new Date().getTime() - new Date(user.activationDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysSinceActivation < 10) {
+      return res.status(400).json({ error: 'Withdrawal available after 10 days from activation' });
+    }
+
+    // Check minimum withdrawal amount based on package
+    const minAmount = user.package === 'A' ? 500 : 1000;
+    if (amount < minAmount) {
+      return res.status(400).json({ error: `Minimum withdrawal amount is KES ${minAmount}` });
+    }
+
+    // Check if user has sufficient balance
+    if (amount > wallet.balance) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+
+    // Check for pending withdrawals
+    const pendingWithdrawals = await Withdrawal.countDocuments({
+      userId,
+      status: { $in: ['pending', 'processing'] }
+    });
+    if (pendingWithdrawals > 0) {
+      return res.status(400).json({ error: 'You have a pending withdrawal request' });
+    }
+
+    // Create withdrawal request
+    const withdrawal = new Withdrawal({
+      userId,
+      amount,
+      paymentMethod,
+      paymentDetails
+    });
+
+    await withdrawal.save();
+
+    // Update wallet (deduct from balance for pending withdrawal)
+    wallet.balance -= amount;
+    wallet.totalWithdrawn += amount;
+    await wallet.save();
+
+    // Send withdrawal submitted email notification
+    try {
+      await sendWithdrawalSubmittedEmail(user.email, user.firstName, amount, paymentMethod);
+    } catch (emailError) {
+      console.error('Failed to send withdrawal submitted email:', emailError);
+    }
+
+    res.status(201).json({
+      message: 'Withdrawal request submitted successfully',
+      withdrawal: {
+        _id: withdrawal._id,
+        amount: withdrawal.amount,
+        status: withdrawal.status,
+        paymentMethod: withdrawal.paymentMethod,
+        createdAt: withdrawal.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Withdrawal creation error:', error);
+    res.status(500).json({ error: 'Failed to create withdrawal request' });
+  }
+});
+
 app.get('/api/withdrawals', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
@@ -391,6 +523,34 @@ app.get('/api/withdrawals', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Fetch withdrawals error:', error);
+    res.status(500).json({ error: 'Failed to fetch withdrawal history' });
+  }
+});
+
+// User withdrawal history endpoint (alternative path)
+app.get('/api/user/withdrawals', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [withdrawals, total] = await Promise.all([
+      Withdrawal.find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('amount status paymentMethod paymentDetails adminNotes payoutReference processedAt createdAt'),
+      Withdrawal.countDocuments({ userId })
+    ]);
+
+    res.json({
+      withdrawals,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit))
+    });
+  } catch (error) {
+    console.error('Fetch user withdrawals error:', error);
     res.status(500).json({ error: 'Failed to fetch withdrawal history' });
   }
 });
