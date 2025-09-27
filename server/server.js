@@ -114,7 +114,7 @@ app.post('/stkpush', async (req, res) => {
 });
 
 // User dashboard endpoints
-app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
+app.get('/api/dashboard', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -284,7 +284,7 @@ app.post('/api/user/tasks/:taskId/submit', authenticateToken, async (req, res) =
 });
 
 // User withdrawal endpoints
-app.post('/api/user/withdrawals', authenticateToken, async (req, res) => {
+app.post('/api/withdrawals', authenticateToken, async (req, res) => {
   try {
     const { amount, paymentMethod, paymentDetails } = req.body;
     const userId = req.user._id;
@@ -310,9 +310,10 @@ app.post('/api/user/withdrawals', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Withdrawal available after 10 days from activation' });
     }
 
-    // Check minimum withdrawal amount
-    if (amount < 300) {
-      return res.status(400).json({ error: 'Minimum withdrawal amount is KES 300' });
+    // Check minimum withdrawal amount based on package
+    const minAmount = user.package === 'A' ? 500 : 1000;
+    if (amount < minAmount) {
+      return res.status(400).json({ error: `Minimum withdrawal amount is KES ${minAmount}` });
     }
 
     // Check if user has sufficient balance
@@ -367,7 +368,7 @@ app.post('/api/user/withdrawals', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/user/withdrawals', authenticateToken, async (req, res) => {
+app.get('/api/withdrawals', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 10 } = req.query;
@@ -1462,7 +1463,6 @@ app.get('/api/auth/validate', authenticateToken, async (req, res) => {
   }
 });
 
-// User login endpoint
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -1502,54 +1502,6 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
-  }
-});
-
-// Additional STK Push endpoint (standalone)
-app.post('/stkpush', async (req, res) => {
-  const { phone, amount } = req.body;
-
-  if (!phone || !amount) {
-    return res.status(400).json({ error: 'Phone and amount are required' });
-  }
-
-  try {
-    const auth = Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString('base64');
-    const tokenResponse = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
-      headers: {
-        Authorization: `Basic ${auth}`
-      }
-    });
-    const accessToken = tokenResponse.data.access_token;
-
-    const timestamp = moment().format('YYYYMMDDHHmmss');
-    const password = Buffer.from(`${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`).toString('base64');
-
-    const stkPushData = {
-      BusinessShortCode: process.env.MPESA_SHORTCODE,
-      Password: password,
-      Timestamp: timestamp,
-      TransactionType: 'CustomerPayBillOnline',
-      Amount: amount,
-      PartyA: phone,
-      PartyB: process.env.MPESA_SHORTCODE,
-      PhoneNumber: phone,
-      CallBackURL: 'https://your-callback-url.com/callback', // Replace with your actual callback URL
-      AccountReference: 'M-Pesa STK Push',
-      TransactionDesc: 'Payment for goods'
-    };
-
-    const response = await axios.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', stkPushData, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error initiating STK push:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Failed to initiate STK push' });
   }
 });
 
