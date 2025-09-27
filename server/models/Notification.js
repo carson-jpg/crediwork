@@ -8,7 +8,7 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['task_assigned', 'task_approved', 'task_rejected', 'payment_success', 'payment_failed', 'withdrawal_approved', 'withdrawal_rejected', 'new_task', 'system'],
+    enum: ['task_assigned', 'task_approved', 'task_rejected', 'payment_success', 'payment_failed', 'withdrawal_approved', 'withdrawal_rejected', 'new_task', 'system', 'info', 'success', 'warning', 'error'],
     required: true
   },
   title: {
