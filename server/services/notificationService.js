@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
 
 // Create a new notification
 export const createNotification = async (userId, type, title, message, relatedId = null, relatedModel = null) => {
@@ -150,7 +151,7 @@ export const createBulkNotifications = async (notificationData, userIds) => {
     let targetUserIds = userIds;
     if (!userIds) {
       // If no userIds provided, send to all users
-      const users = await mongoose.connection.db.collection('users').find({}).toArray();
+      const users = await User.find({}).select('_id');
       targetUserIds = users.map(user => user._id);
     }
 
