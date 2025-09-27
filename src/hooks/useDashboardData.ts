@@ -27,7 +27,7 @@ export const useDashboardData = (user: User | null) => {
     const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
+        const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com');
         const response = await fetch(`${baseURL}/api/user/dashboard`, {
           headers: {
             'Authorization': `Bearer ${token}`,
