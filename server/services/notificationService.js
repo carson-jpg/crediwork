@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Notification from '../models/Notification.js';
 
 // Create a new notification
@@ -142,9 +143,18 @@ export const getAllNotifications = async (page = 1, limit = 10, filters = {}) =>
 };
 
 // Create notification for multiple users (broadcast)
-export const createBulkNotifications = async (userIds, type, title, message, relatedId = null, relatedModel = null) => {
+export const createBulkNotifications = async (notificationData, userIds) => {
   try {
-    const notifications = userIds.map(userId => ({
+    const { type, title, message, relatedId, relatedModel, createdBy } = notificationData;
+
+    let targetUserIds = userIds;
+    if (!userIds) {
+      // If no userIds provided, send to all users
+      const users = await mongoose.connection.db.collection('users').find({}).toArray();
+      targetUserIds = users.map(user => user._id);
+    }
+
+    const notifications = targetUserIds.map(userId => ({
       userId,
       type,
       title,
@@ -154,7 +164,7 @@ export const createBulkNotifications = async (userIds, type, title, message, rel
     }));
 
     const createdNotifications = await Notification.insertMany(notifications);
-    return createdNotifications;
+    return { createdCount: createdNotifications.length };
   } catch (error) {
     console.error('Error creating bulk notifications:', error);
     throw error;
