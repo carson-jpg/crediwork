@@ -1586,6 +1586,22 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, phone, firstName, lastName, package: userPackage } = req.body;
 
+    // Validate required fields
+    if (!email || !password || !phone || !firstName) {
+      return res.status(400).json({ error: 'Email, password, phone, and firstName are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
@@ -1602,7 +1618,7 @@ app.post('/api/auth/register', async (req, res) => {
       password,
       phone,
       firstName,
-      lastName,
+      lastName: lastName || '', // Allow empty lastName
       role
     };
 
@@ -1610,6 +1626,9 @@ app.post('/api/auth/register', async (req, res) => {
     if (!isAdmin) {
       if (!userPackage) {
         return res.status(400).json({ error: 'Package is required for user registration' });
+      }
+      if (!['A', 'B'].includes(userPackage)) {
+        return res.status(400).json({ error: 'Invalid package. Must be A or B' });
       }
       userData.package = userPackage;
       userData.packageAmount = userPackage === 'A' ? 1000 : 2000;
@@ -1642,7 +1661,15 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    // Return more specific error messages
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'User already exists with this email or phone' });
+    }
+    res.status(500).json({ error: 'Registration failed', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 });
 
