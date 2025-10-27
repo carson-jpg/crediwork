@@ -33,7 +33,7 @@ export const requireAdmin = (req, res, next) => {
 
 export const requireActiveUser = (req, res, next) => {
   if (req.user.status !== 'active') {
-    return res.status(403).json({ error: 'Account not active' });
+    return res.status(403).json({ error: 'Account not active. Please complete payment and wait for admin approval.' });
   }
   next();
 };

@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const validateToken = async (token: string) => {
     try {
       const baseURL = import.meta.env.VITE_API_URL || 'https://crediwork.onrender.com';
-      const response = await fetch(`${baseURL}/api/auth/validate`, {
+      const response = await fetch(`${baseURL}/api/auth/status`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -64,6 +64,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           _id: data.user._id,
           email: data.user.email,
           phone: data.user.phone,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
           fullName: `${data.user.firstName} ${data.user.lastName}`,
           role: data.user.role,
           package: data.user.package,
@@ -75,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedAt: new Date(data.user.updatedAt),
         };
         setUser(validatedUser);
-        console.log('Token validated successfully, user:', validatedUser.role);
+        console.log('Token validated successfully, user:', validatedUser.role, 'status:', validatedUser.status);
       } else {
         console.log('Token validation failed, clearing token');
         localStorage.removeItem('token');
@@ -113,6 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         _id: data.user._id,
         email: data.user.email,
         phone: data.user.phone,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
         fullName: `${data.user.firstName} ${data.user.lastName}`,
         role: data.user.role,
         package: data.user.package,
@@ -163,6 +167,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         _id: data.user._id,
         email: data.user.email,
         phone: userData.phone,
+        firstName: userData.fullName.split(' ')[0],
+        lastName: userData.fullName.split(' ').slice(1).join(' ') || '',
         fullName: userData.fullName,
         role: data.user.role,
         package: data.user.package,

@@ -1697,6 +1697,30 @@ app.get('/api/auth/validate', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user status endpoint (for pending users to check their status)
+app.get('/api/auth/status', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      user: {
+        _id: req.user._id,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        phone: req.user.phone,
+        role: req.user.role,
+        package: req.user.package,
+        status: req.user.status,
+        activationDate: req.user.activationDate,
+        createdAt: req.user.createdAt,
+        updatedAt: req.user.updatedAt,
+      }
+    });
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({ error: 'Failed to get user status' });
+  }
+});
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
