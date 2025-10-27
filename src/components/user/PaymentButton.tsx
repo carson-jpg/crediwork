@@ -6,7 +6,7 @@ interface PaymentButtonProps {
 }
 
 export const PaymentButton: React.FC<PaymentButtonProps> = ({ packagePrice, packageName }) => {
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('254');
   const [amount, setAmount] = useState(packagePrice);
   const [responseMessage, setResponseMessage] = useState('');
   const [responseClass, setResponseClass] = useState('');
@@ -105,9 +105,20 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ packagePrice, pack
           required
           placeholder="254712345678"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => {
+            // Ensure the phone number always starts with 254
+            let value = e.target.value;
+            if (!value.startsWith('254')) {
+              value = '254' + value.replace(/^254/, '');
+            }
+            // Limit to 12 digits (254 + 9 digits)
+            if (value.length <= 12) {
+              setPhone(value);
+            }
+          }}
           style={styles.input}
           disabled={loading}
+          maxLength={12}
         />
 
         <label htmlFor="amount" style={styles.label}>Amount (KES):</label>
