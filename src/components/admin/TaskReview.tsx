@@ -108,9 +108,9 @@ export const TaskReview: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
+      case 'completed':
         return 'bg-green-100 text-green-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
@@ -254,6 +254,16 @@ export const TaskReview: React.FC = () => {
                               on {new Date(submission.reviewData.reviewedAt).toLocaleDateString()}
                             </span>
                           </div>
+
+                          {submission.status === 'completed' && (
+                            <div className="mt-2 p-3 bg-green-50 rounded border border-green-200">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="font-medium text-green-900">Awarded Amount:</span>
+                              </div>
+                              <p className="text-green-800 font-semibold">KES {submission.taskId?.reward || 0}</p>
+                            </div>
+                          )}
 
                           {submission.reviewData.rejectionReason && (
                             <div className="mt-2 p-3 bg-red-50 rounded border border-red-200">

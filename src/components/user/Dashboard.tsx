@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useWalletData } from '../../hooks/useWalletData';
 import { PaymentButton } from './PaymentButton';
+import { Task, UserTask } from '../../types';
 import {
   Wallet,
   CheckSquare,
@@ -19,21 +20,57 @@ export const Dashboard: React.FC = () => {
   const { dashboardData, isLoading } = useDashboardData(user);
   const { canWithdraw, daysUntilWithdrawal } = useWalletData(user);
 
-
-
-
-
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="bg-gray-200 h-32 rounded-xl"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-gray-200 h-24 rounded-lg"></div>
-            ))}
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="animate-pulse space-y-8">
+            {/* Header skeleton */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <div className="flex items-center justify-between">
+                <div className="space-y-3">
+                  <div className="bg-gray-200 h-8 w-80 rounded-lg"></div>
+                  <div className="bg-gray-200 h-5 w-96 rounded-lg"></div>
+                </div>
+                <div className="bg-gray-200 h-12 w-24 rounded-full"></div>
+              </div>
+            </div>
+
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gray-200 h-12 w-12 rounded-xl"></div>
+                    <div className="space-y-2">
+                      <div className="bg-gray-200 h-4 w-20 rounded"></div>
+                      <div className="bg-gray-200 h-6 w-16 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Content skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-gray-200 h-6 w-32 rounded mb-4"></div>
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-gray-200 h-16 rounded-lg"></div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-gray-200 h-6 w-32 rounded mb-4"></div>
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-gray-200 h-12 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="bg-gray-200 h-64 rounded-lg"></div>
         </div>
       </div>
     );
@@ -77,141 +114,153 @@ export const Dashboard: React.FC = () => {
 
   if (user?.status === 'pending') {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <Clock className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-yellow-800 mb-2">Account Pending Approval</h2>
-          <p className="text-yellow-700 mb-6">
-            Your registration is under review. Please complete payment for Package {user.package}
-            (KES {user.packagePrice.toLocaleString()}) and wait for admin approval.
-          </p>
-          <PaymentButton packagePrice={user.packagePrice} packageName={user.package || 'Unknown'} />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-md mx-auto p-6 pt-20">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock className="h-10 w-10 text-yellow-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Account Pending Approval</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Your registration is under review. Please complete payment for Package {user.package}
+              (KES {user.packagePrice.toLocaleString()}) and wait for admin approval.
+            </p>
+            <div className="space-y-4">
+              <PaymentButton packagePrice={user.packagePrice} packageName={user.package || 'Unknown'} />
+              <p className="text-sm text-gray-500">
+                Need help? Contact our support team
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.fullName}!</h1>
-            <p className="text-blue-100">
-              You're on Package {user?.package} - earning KES {user?.dailyEarning} per completed task
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Star className="h-6 w-6 text-yellow-300" />
-            <span className="text-lg font-semibold">Level 1</span>
-          </div>
-        </div>
-      </div>
-
-
-
-
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickStats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-lg font-bold text-gray-900">{stat.value}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Today's Tasks Preview */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Today's Tasks</h2>
-            <Link 
-              to="/tasks"
-              className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
-            >
-              View All Tasks
-            </Link>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.firstName} {user?.lastName}!</h1>
+              <p className="text-blue-100 text-lg">
+                Package {user?.package} • Earning KES {user?.dailyEarning} per task
+              </p>
+            </div>
+            <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
+              <Star className="h-5 w-5 text-yellow-300 fill-current" />
+              <span className="text-lg font-semibold">Level 1</span>
+            </div>
           </div>
         </div>
-        
-        <div className="p-6">
-          {todaysTasks.length > 0 ? (
-            <div className="space-y-4">
-              {todaysTasks.slice(0, 2).map((userTask: any) => {
-                const task = dashboardData?.todaysTasks.find((t: any) => t._id === userTask.taskId);
-                if (!task) return null;
 
-                return (
-                  <div key={userTask._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-lg ${
-                        userTask.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
-                      }`}>
-                        <CheckSquare className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{task.title}</h3>
-                        <p className="text-sm text-gray-600">{task.estimatedTime} min • KES {task.reward}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        userTask.status === 'completed' 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {userTask.status === 'completed' ? 'Completed' : 'Available'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Tasks Today</h3>
-              <p className="text-gray-600">New tasks will be assigned tomorrow at midnight</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-        </div>
-        <div className="p-6">
-          {recentActivity.length > 0 ? (
-            <div className="space-y-4">
-              {recentActivity.slice(0, 5).map((activity: any, index: number) => (
-                <div key={index} className="flex items-center space-x-4 p-3 rounded-lg bg-emerald-50">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Task completed</p>
-                    <p className="text-xs text-gray-600">
-                      Earned KES {activity.reward} • {new Date(activity.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {quickStats.map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-200 group">
+              <div className="flex items-center">
+                <div className={`p-4 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-200`}>
+                  <stat.icon className={`h-7 w-7 ${stat.color}`} />
                 </div>
-              ))}
+                <div className="ml-5">
+                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600">No recent activity</p>
+          ))}
+        </div>
+
+        {/* Today's Tasks Preview */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Today's Tasks</h2>
+              <Link
+                to="/tasks"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+              >
+                View All Tasks
+              </Link>
             </div>
-          )}
+          </div>
+
+          <div className="p-6">
+            {todaysTasks.length > 0 ? (
+              <div className="space-y-4">
+                {todaysTasks.slice(0, 2).map((item: { task: Task; userTask: UserTask }) => {
+                  const { task, userTask } = item;
+
+                  return (
+                    <div key={userTask._id} className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-xl ${
+                          userTask.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                        }`}>
+                          <CheckSquare className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-lg">{task.title}</h3>
+                          <p className="text-sm text-gray-600">{task.estimatedTime} min • KES {task.reward}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          userTask.status === 'completed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {userTask.status === 'completed' ? 'Completed' : 'Available'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Gift className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">No Tasks Today</h3>
+                <p className="text-gray-600 max-w-md mx-auto">New tasks will be assigned tomorrow at midnight. Check back later!</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+          </div>
+          <div className="p-6">
+            {recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.slice(0, 5).map((activity: any, index: number) => (
+                  <div key={index} className="flex items-center space-x-4 p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors duration-200">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-gray-900">Task completed</p>
+                      <p className="text-sm text-gray-600">
+                        Earned KES {activity.reward} • {new Date(activity.updatedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckSquare className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">No Recent Activity</h3>
+                <p className="text-gray-600 max-w-md mx-auto">Complete your first task to see your activity history here!</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

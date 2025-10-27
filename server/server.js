@@ -31,7 +31,7 @@ import { getAllSettings, getSettingsByCategory, createSetting, updateSetting, de
 import { createNotification, getUserNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification, createBulkNotifications, getAllNotifications } from './services/notificationService.js';
 
 // Import middleware
-import { authenticateToken, requireAdmin } from './middleware/auth.js';
+import { authenticateToken, requireAdmin, requireActiveUser } from './middleware/auth.js';
 
 // Initialize dotenv
 dotenv.config();
@@ -114,7 +114,7 @@ app.post('/stkpush', async (req, res) => {
 });
 
 // User dashboard endpoints
-app.get('/api/dashboard', authenticateToken, async (req, res) => {
+app.get('/api/dashboard', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -139,10 +139,10 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
       assignedDate: { $gte: today, $lt: tomorrow }
     });
 
-    // Get recent activity (last 5 approved task submissions)
+    // Get recent activity (last 5 completed task submissions)
     const recentActivity = await TaskSubmission.find({
       userId,
-      status: 'approved'
+      status: 'completed'
     }).populate('taskId', 'title reward')
     .sort({ updatedAt: -1 })
     .limit(5)
@@ -161,7 +161,7 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
 });
 
 // User dashboard endpoint (alternative path)
-app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
+app.get('/api/user/dashboard', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -186,10 +186,10 @@ app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
       assignedDate: { $gte: today, $lt: tomorrow }
     });
 
-    // Get recent activity (last 5 approved task submissions)
+    // Get recent activity (last 5 completed task submissions)
     const recentActivity = await TaskSubmission.find({
       userId,
-      status: 'approved'
+      status: 'completed'
     }).populate('taskId', 'title reward')
     .sort({ updatedAt: -1 })
     .limit(5)
@@ -207,7 +207,7 @@ app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/user/wallet', authenticateToken, async (req, res) => {
+app.get('/api/user/wallet', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
     const wallet = await Wallet.findOne({ userId });
@@ -240,25 +240,47 @@ app.get('/api/user/wallet', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/user/tasks', authenticateToken, async (req, res) => {
+app.get('/api/user/tasks', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Get user's assigned tasks
+    // Get user to check package
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Filter tasks based on package
+    const rewardFilter = user.package === 'A' ? 50 : 100;
+
+    // Get user's assigned tasks with reward filtering
     const userTasks = await UserTask.find({ userId })
-      .populate('taskId')
+      .populate({
+        path: 'taskId',
+        match: { reward: rewardFilter }
+      })
       .sort({ assignedDate: -1 })
       .select('taskId status assignedDate dueDate submissionId');
 
-    // Get task submissions
+    // Filter out null taskId (tasks that don't match the reward filter)
+    const filteredUserTasks = userTasks.filter(ut => ut.taskId !== null);
+
+    // Get task submissions with reward filtering
     const submissions = await TaskSubmission.find({ userId })
-      .populate('taskId', 'title')
+      .populate({
+        path: 'taskId',
+        match: { reward: rewardFilter },
+        select: 'title'
+      })
       .sort({ submittedAt: -1 })
       .select('taskId status submittedAt earnedAmount');
 
+    // Filter out null taskId from submissions
+    const filteredSubmissions = submissions.filter(sub => sub.taskId !== null);
+
     res.json({
-      userTasks,
-      submissions
+      userTasks: filteredUserTasks,
+      submissions: filteredSubmissions
     });
   } catch (error) {
     console.error('Tasks data error:', error);
@@ -266,7 +288,7 @@ app.get('/api/user/tasks', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/user/tasks/:taskId/submit', authenticateToken, async (req, res) => {
+app.post('/api/user/tasks/:taskId/submit', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const { taskId } = req.params;
     const { content, proof } = req.body;
@@ -331,7 +353,7 @@ app.post('/api/user/tasks/:taskId/submit', authenticateToken, async (req, res) =
 });
 
 // User withdrawal endpoints
-app.post('/api/withdrawals', authenticateToken, async (req, res) => {
+app.post('/api/withdrawals', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const { amount, paymentMethod, paymentDetails } = req.body;
     const userId = req.user._id;
@@ -416,7 +438,7 @@ app.post('/api/withdrawals', authenticateToken, async (req, res) => {
 });
 
 // User withdrawal endpoint (alternative path)
-app.post('/api/user/withdrawals', authenticateToken, async (req, res) => {
+app.post('/api/user/withdrawals', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const { amount, paymentMethod, paymentDetails } = req.body;
     const userId = req.user._id;
@@ -500,7 +522,7 @@ app.post('/api/user/withdrawals', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/withdrawals', authenticateToken, async (req, res) => {
+app.get('/api/withdrawals', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 10 } = req.query;
@@ -528,7 +550,7 @@ app.get('/api/withdrawals', authenticateToken, async (req, res) => {
 });
 
 // User withdrawal history endpoint (alternative path)
-app.get('/api/user/withdrawals', authenticateToken, async (req, res) => {
+app.get('/api/user/withdrawals', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 10 } = req.query;
@@ -1049,17 +1071,29 @@ app.post('/api/admin/tasks', authenticateToken, requireAdmin, async (req, res) =
 
     await newTask.save();
 
-    // Automatically assign task to all active users
+    // Automatically assign task to all active users based on their package
     try {
-      const activeUsers = await User.find({ status: 'active' }).select('_id');
-      const userIds = activeUsers.map(user => user._id);
+      const activeUsers = await User.find({ status: 'active' }).select('_id package');
+      const packageAUsers = activeUsers.filter(user => user.package === 'A').map(user => user._id);
+      const packageBUsers = activeUsers.filter(user => user.package === 'B').map(user => user._id);
 
-      if (userIds.length > 0) {
+      // Assign to Package A users if reward is 50, Package B users if reward is 100
+      let targetUsers = [];
+      if (newTask.reward === 50) {
+        targetUsers = packageAUsers;
+      } else if (newTask.reward === 100) {
+        targetUsers = packageBUsers;
+      } else {
+        // If reward doesn't match expected values, assign to all users
+        targetUsers = activeUsers.map(user => user._id);
+      }
+
+      if (targetUsers.length > 0) {
         const assignedDate = new Date();
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 7); // Default 7 days due date
 
-        const userTasks = userIds.map(userId => ({
+        const userTasks = targetUsers.map(userId => ({
           userId,
           taskId: newTask._id,
           assignedDate,
@@ -1068,7 +1102,7 @@ app.post('/api/admin/tasks', authenticateToken, requireAdmin, async (req, res) =
         }));
 
         await UserTask.insertMany(userTasks);
-        console.log(`Task automatically assigned to ${userIds.length} active users`);
+        console.log(`Task automatically assigned to ${targetUsers.length} active users based on package`);
       }
     } catch (assignmentError) {
       console.error('Error auto-assigning task:', assignmentError);
@@ -1279,7 +1313,7 @@ app.put('/api/admin/task-submissions/:submissionId', authenticateToken, requireA
     };
 
     if (action === 'approve') {
-      updateData.status = 'approved';
+      updateData.status = 'completed';
       const submission = await TaskSubmission.findById(submissionId).populate('taskId');
       if (submission) {
         const wallet = await Wallet.findOne({ userId: submission.userId });
@@ -1413,7 +1447,7 @@ app.delete('/api/admin/settings/:id', authenticateToken, requireAdmin, async (re
 // Notification Management Endpoints
 
 // Get user notifications
-app.get('/api/user/notifications', authenticateToken, async (req, res) => {
+app.get('/api/user/notifications', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 20 } = req.query;
@@ -1428,7 +1462,7 @@ app.get('/api/user/notifications', authenticateToken, async (req, res) => {
 });
 
 // Get unread notification count
-app.get('/api/user/notifications/unread-count', authenticateToken, async (req, res) => {
+app.get('/api/user/notifications/unread-count', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
     const count = await getUnreadCount(userId);
@@ -1440,7 +1474,7 @@ app.get('/api/user/notifications/unread-count', authenticateToken, async (req, r
 });
 
 // Mark notification as read
-app.put('/api/user/notifications/:notificationId/read', authenticateToken, async (req, res) => {
+app.put('/api/user/notifications/:notificationId/read', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const { notificationId } = req.params;
     const userId = req.user._id;
@@ -1457,7 +1491,7 @@ app.put('/api/user/notifications/:notificationId/read', authenticateToken, async
 });
 
 // Mark all notifications as read
-app.put('/api/user/notifications/mark-all-read', authenticateToken, async (req, res) => {
+app.put('/api/user/notifications/mark-all-read', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const userId = req.user._id;
     const result = await markAllAsRead(userId);
@@ -1469,7 +1503,7 @@ app.put('/api/user/notifications/mark-all-read', authenticateToken, async (req, 
 });
 
 // Delete notification
-app.delete('/api/user/notifications/:notificationId', authenticateToken, async (req, res) => {
+app.delete('/api/user/notifications/:notificationId', authenticateToken, requireActiveUser, async (req, res) => {
   try {
     const { notificationId } = req.params;
     const userId = req.user._id;

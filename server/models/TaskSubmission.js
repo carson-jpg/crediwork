@@ -21,7 +21,7 @@ const taskSubmissionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'completed', 'rejected'],
     default: 'pending'
   },
   submittedAt: {
