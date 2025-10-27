@@ -1592,19 +1592,32 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists with this email or phone' });
     }
 
-    // Create new user
-    const newUser = new User({
+    // Determine role
+    const isAdmin = email.endsWith('@admin.com');
+    const role = isAdmin ? 'admin' : 'user';
+
+    // Prepare user data
+    const userData = {
       email,
       password,
       phone,
       firstName,
       lastName,
-      package: userPackage,
-      packageAmount: userPackage === 'A' ? 1000 : 2000,
-      dailyEarning: userPackage === 'A' ? 50 : 100,
-      role: email.endsWith('@admin.com') ? 'admin' : 'user'
-    });
+      role
+    };
 
+    // Only set package-related fields for regular users
+    if (!isAdmin) {
+      if (!userPackage) {
+        return res.status(400).json({ error: 'Package is required for user registration' });
+      }
+      userData.package = userPackage;
+      userData.packageAmount = userPackage === 'A' ? 1000 : 2000;
+      userData.dailyEarning = userPackage === 'A' ? 50 : 100;
+    }
+
+    // Create new user
+    const newUser = new User(userData);
     await newUser.save();
 
     // Generate JWT token
