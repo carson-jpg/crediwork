@@ -14,6 +14,12 @@ export const useTaskData = (user: User | null) => {
       return;
     }
 
+    // Don't fetch task data for pending users
+    if (user.status === 'pending') {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchTaskData = async () => {
       try {
         const token = localStorage.getItem('token');

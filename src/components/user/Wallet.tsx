@@ -13,6 +13,27 @@ import {
 
 export const Wallet: React.FC = () => {
   const { user } = useAuth();
+
+  // Don't render wallet for pending users
+  if (user?.status === 'pending') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-md mx-auto p-6 pt-20">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock className="h-10 w-10 text-yellow-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Account Pending Approval</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Your registration is under review. Please complete payment for Package {user.package}
+              (KES {user.packagePrice.toLocaleString()}) and wait for admin approval to access your wallet.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const { wallet, canWithdraw, daysUntilWithdrawal } = useWalletData(user);
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState('');

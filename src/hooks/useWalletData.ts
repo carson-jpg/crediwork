@@ -12,6 +12,12 @@ export const useWalletData = (user: User | null) => {
       return;
     }
 
+    // Don't fetch wallet data for pending users
+    if (user.status === 'pending') {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchWalletData = async () => {
       try {
         const token = localStorage.getItem('token');

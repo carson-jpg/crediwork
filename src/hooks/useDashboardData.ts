@@ -24,6 +24,12 @@ export const useDashboardData = (user: User | null) => {
       return;
     }
 
+    // Don't fetch dashboard data for pending users
+    if (user.status === 'pending') {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('token');
