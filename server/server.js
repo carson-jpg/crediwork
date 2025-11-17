@@ -1774,8 +1774,8 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Phone number and amount are required' });
     }
 
-    // Format phone number to ensure it starts with 254
-    let formattedPhone = phoneNumber.toString().replace(/\D/g, ''); // Remove non-digits
+    // Format phone number to ensure it starts with 254 (remove + if present)
+    let formattedPhone = phoneNumber.toString().replace(/^\+/, '').replace(/\D/g, ''); // Remove + and non-digits
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '254' + formattedPhone.substring(1);
     } else if (!formattedPhone.startsWith('254')) {
