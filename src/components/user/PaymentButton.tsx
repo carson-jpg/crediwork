@@ -97,13 +97,13 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ packagePrice, pack
     <div style={styles.container}>
       <h2>Make Your Payment</h2>
       <form id="stkForm" style={styles.form} onSubmit={handleSubmit}>
-        <label htmlFor="phone" style={styles.label}>Phone Number (254...):</label>
+        <label htmlFor="phone" style={styles.label}>Phone Number (+254...):</label>
         <input
           type="text"
           id="phone"
           name="phone"
           required
-          placeholder="254712345678"
+          placeholder="+254712345678"
           value={phone}
           onChange={(e) => {
             // Ensure the phone number always starts with 254

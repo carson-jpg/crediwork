@@ -1774,6 +1774,17 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Phone number and amount are required' });
     }
 
+    // Format phone number to ensure it starts with 254
+    let formattedPhone = phoneNumber.toString().replace(/\D/g, ''); // Remove non-digits
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '254' + formattedPhone.substring(1);
+    } else if (!formattedPhone.startsWith('254')) {
+      formattedPhone = '254' + formattedPhone;
+    }
+    if (formattedPhone.length !== 12) {
+      return res.status(400).json({ error: 'Invalid phone number format. Must be 12 digits starting with 254' });
+    }
+
     // Check if user exists and is pending
     const user = await User.findById(userId);
     if (!user) {
@@ -1791,7 +1802,7 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
 
     // Initiate STK push
     const stkPushResult = await initiateSTKPush(
-      phoneNumber,
+      formattedPhone,
       amount,
       `User-${userId}`, // accountReference
       `Payment for ${user.package} package` // transactionDesc
@@ -1829,7 +1840,7 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
       userId,
       amount,
       package: user.package,
-      phoneNumber,
+      phoneNumber: formattedPhone,
       mpesaTransactionId: stkPushResult.transactionId,
       status: 'pending'
     });
