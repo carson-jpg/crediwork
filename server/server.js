@@ -1828,6 +1828,7 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
     const payment = new Payment({
       userId,
       amount,
+      package: user.package,
       phoneNumber,
       mpesaTransactionId: stkPushResult.transactionId,
       status: 'pending'
