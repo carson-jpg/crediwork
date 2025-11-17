@@ -1877,7 +1877,8 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
     // Production validation
     const { Body } = callbackData;
     if (!Body || !Body.stkCallback) {
-      return res.status(400).json({ error: 'Invalid callback data' });
+      console.log('Invalid callback data received:', JSON.stringify(callbackData, null, 2));
+      return res.status(200).json({ message: 'Callback received but invalid data' });
     }
 
     const { stkCallback } = Body;
@@ -1887,7 +1888,7 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
     const payment = await Payment.findOne({ mpesaTransactionId: CheckoutRequestID });
     if (!payment) {
       console.log('Payment not found for transaction ID:', CheckoutRequestID);
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(200).json({ message: 'Payment not found' });
     }
 
     // Get user details for email
