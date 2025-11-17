@@ -27,7 +27,7 @@ const baseUrls = {
   production: 'https://api.safaricom.co.ke'
 };
 
-const baseUrl = MPESA_ENV === 'production' ? baseUrls.production : baseUrls.sandbox;
+const baseUrl = MPESA_ENV !== 'sandbox' ? baseUrls.production : baseUrls.sandbox;
 console.log('Using base URL:', baseUrl);
 
 let accessToken = null;

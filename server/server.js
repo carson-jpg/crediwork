@@ -1879,6 +1879,9 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
       return res.status(404).json({ error: 'Payment not found' });
     }
 
+    // Get user details for email
+    const user = await User.findById(payment.userId);
+
     if (ResultCode === 0) {
       // Payment successful
       payment.status = 'completed';
@@ -1893,7 +1896,9 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
 
       // Send payment success email notification
       try {
-        await sendPaymentSuccessEmail(payment.userId, payment.amount);
+        if (user) {
+          await sendPaymentSuccessEmail(user.email, user.firstName, payment.amount, user.package);
+        }
       } catch (emailError) {
         console.error('Failed to send payment success email:', emailError);
       }
@@ -1906,7 +1911,9 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
 
       // Send payment failure email notification
       try {
-        await sendPaymentFailedEmail(payment.userId, ResultDesc);
+        if (user) {
+          await sendPaymentFailedEmail(user.email, user.firstName, payment.amount, ResultDesc);
+        }
       } catch (emailError) {
         console.error('Failed to send payment failure email:', emailError);
       }
