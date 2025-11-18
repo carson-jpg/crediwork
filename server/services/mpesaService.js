@@ -124,7 +124,7 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
       TransactionType: 'CustomerPayBillOnline',
       Amount: amount,
       PartyA: phoneNumber,
-      PartyB: MPESA_SHORTCODE,
+      PartyB: MPESA_PAYBILL,
       PhoneNumber: phoneNumber,
       CallBackURL: callbackUrl,
       AccountReference: accountReference,
