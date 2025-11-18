@@ -10,7 +10,8 @@ const {
   MPESA_SHORTCODE,
   MPESA_PASSKEY,
   MPESA_ENV,
-  MPESA_CALLBACK_URL
+  MPESA_CALLBACK_URL,
+  MPESA_PAYBILL
 } = process.env;
 
 // Debug logging for environment variables
@@ -18,6 +19,7 @@ console.log('M-Pesa Environment Variables:');
 console.log('MPESA_CONSUMER_KEY:', MPESA_CONSUMER_KEY ? 'Set' : 'Not set');
 console.log('MPESA_CONSUMER_SECRET:', MPESA_CONSUMER_SECRET ? 'Set' : 'Not set');
 console.log('MPESA_SHORTCODE:', MPESA_SHORTCODE);
+console.log('MPESA_PAYBILL:', MPESA_PAYBILL);
 console.log('MPESA_PASSKEY:', MPESA_PASSKEY ? 'Set' : 'Not set');
 console.log('MPESA_ENV:', MPESA_ENV);
 console.log('MPESA_CALLBACK_URL:', MPESA_CALLBACK_URL);
