@@ -11,7 +11,11 @@ const {
   MPESA_PASSKEY,
   MPESA_ENV,
   MPESA_CALLBACK_URL,
-  MPESA_PAYBILL
+  MPESA_PAYBILL,
+  MPESA_TRANSACTION_TYPE,
+  MPESA_PARTYB,
+  MPESA_ACCOUNT_REFERENCE,
+  MPESA_TRANSACTION_DESC
 } = process.env;
 
 // Debug logging for environment variables
@@ -123,14 +127,14 @@ export async function initiateSTKPush(phoneNumber, amount, accountReference, tra
       BusinessShortCode: MPESA_SHORTCODE,
       Password: password,
       Timestamp: timestamp,
-      TransactionType: 'CustomerPayBillOnline',
+      TransactionType: MPESA_TRANSACTION_TYPE,
       Amount: amount,
       PartyA: phoneNumber,
-      PartyB: MPESA_PAYBILL,
+      PartyB: MPESA_PARTYB,
       PhoneNumber: phoneNumber,
       CallBackURL: callbackUrl,
-      AccountReference: accountReference,
-      TransactionDesc: transactionDesc
+      AccountReference: MPESA_ACCOUNT_REFERENCE,
+      TransactionDesc: MPESA_TRANSACTION_DESC
     };
 
     console.log('STK Push payload:', JSON.stringify(payload, null, 2));
