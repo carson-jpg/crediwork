@@ -290,23 +290,31 @@ app.get('/api/user/tasks', authenticateToken, requireActiveUser, async (req, res
 
 app.post('/api/user/tasks/:taskId/submit', authenticateToken, requireActiveUser, async (req, res) => {
   try {
+    console.log('Task submission started for taskId:', req.params.taskId, 'userId:', req.user._id);
     const { taskId } = req.params;
     const { content, proof } = req.body;
     const userId = req.user._id;
 
+    console.log('Request body:', { content: content ? 'present' : 'missing', proof: proof ? 'present' : 'missing' });
+
     // Find the task
     const task = await Task.findById(taskId);
     if (!task) {
+      console.log('Task not found:', taskId);
       return res.status(404).json({ error: 'Task not found' });
     }
+    console.log('Task found:', task._id, task.title);
 
     // Check if user has this task assigned
     const userTask = await UserTask.findOne({ userId, taskId, status: 'assigned' });
     if (!userTask) {
+      console.log('User task not found or not assigned:', { userId, taskId });
       return res.status(400).json({ error: 'Task not assigned to user' });
     }
+    console.log('User task found:', userTask._id);
 
     // Create submission
+    console.log('Creating submission...');
     const submission = new TaskSubmission({
       userId,
       taskId,
@@ -315,29 +323,36 @@ app.post('/api/user/tasks/:taskId/submit', authenticateToken, requireActiveUser,
       status: 'pending'
     });
     await submission.save();
+    console.log('Submission created:', submission._id);
 
     // Update user task status
+    console.log('Updating user task status...');
     userTask.status = 'submitted';
     userTask.submissionId = submission._id;
     await userTask.save();
+    console.log('User task updated');
 
     // Add provisional reward to user's wallet balance
+    console.log('Updating wallet...');
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
-      wallet = new Wallet({ 
-        userId, 
-        balance: task.reward, 
-        totalEarned: 0, 
-        totalWithdrawn: 0 
+      wallet = new Wallet({
+        userId,
+        balance: task.reward,
+        totalEarned: 0,
+        totalWithdrawn: 0
       });
       await wallet.save();
+      console.log('New wallet created');
     } else {
       wallet.balance += task.reward;
       await wallet.save();
+      console.log('Wallet balance updated');
     }
 
     // Note: Reward added provisionally to balance; will be deducted if rejected, totalEarned updated if approved
 
+    console.log('Task submission completed successfully');
     res.json({
       message: 'Task submitted successfully',
       submission: {
@@ -348,6 +363,7 @@ app.post('/api/user/tasks/:taskId/submit', authenticateToken, requireActiveUser,
     });
   } catch (error) {
     console.error('Task submission error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to submit task' });
   }
 });

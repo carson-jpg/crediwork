@@ -21,8 +21,12 @@ const userTaskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['assigned', 'completed', 'approved', 'rejected', 'expired'],
+    enum: ['assigned', 'submitted', 'completed', 'approved', 'rejected', 'expired'],
     default: 'assigned'
+  },
+  submissionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TaskSubmission'
   },
   submissionData: {
     proofText: String,
