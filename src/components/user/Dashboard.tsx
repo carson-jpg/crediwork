@@ -81,6 +81,8 @@ export const Dashboard: React.FC = () => {
   const completedToday = dashboardData?.completedToday || 0;
   const recentActivity = dashboardData?.recentActivity || [];
 
+  console.log('Dashboard data:', { todaysTasks, recentActivity });
+
   const quickStats = [
     {
       label: 'Available Balance',
@@ -191,6 +193,7 @@ export const Dashboard: React.FC = () => {
             {todaysTasks.length > 0 ? (
               <div className="space-y-4">
                 {todaysTasks.slice(0, 2).map((item: { task: Task; userTask: UserTask }) => {
+                  console.log('Mapping todaysTasks item:', item);
                   const { task, userTask } = item;
 
                   return (
@@ -239,17 +242,20 @@ export const Dashboard: React.FC = () => {
           <div className="p-6">
             {recentActivity.length > 0 ? (
               <div className="space-y-4">
-                {recentActivity.slice(0, 5).map((activity: any, index: number) => (
-                  <div key={index} className="flex items-center space-x-4 p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors duration-200">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full flex-shrink-0"></div>
-                    <div className="flex-1">
-                      <p className="text-base font-semibold text-gray-900">Task completed</p>
-                      <p className="text-sm text-gray-600">
-                        Earned KES {activity.reward} • {new Date(activity.updatedAt).toLocaleDateString()}
-                      </p>
+                {recentActivity.slice(0, 5).map((activity: any, index: number) => {
+                  console.log('Mapping recentActivity item:', activity);
+                  return (
+                    <div key={index} className="flex items-center space-x-4 p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors duration-200">
+                      <div className="w-3 h-3 bg-emerald-500 rounded-full flex-shrink-0"></div>
+                      <div className="flex-1">
+                        <p className="text-base font-semibold text-gray-900">Task completed</p>
+                        <p className="text-sm text-gray-600">
+                          Earned KES {activity.reward} • {new Date(activity.updatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12">
