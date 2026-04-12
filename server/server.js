@@ -33,6 +33,9 @@ import { createNotification, getUserNotifications, getUnreadCount, markAsRead, m
 // Import middleware
 import { authenticateToken, requireAdmin, requireActiveUser } from './middleware/auth.js';
 
+// ── Sentinel Watch Integration ────────────────────────────────────────────────
+import sentinel from './sentinel.js';
+
 // Initialize dotenv
 dotenv.config();
 
@@ -62,7 +65,11 @@ app.use(limiter);
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/crediwork')
-  .then(() => console.log('MongoDB connected'))
+  .then(() => {
+    console.log('MongoDB connected');
+    // ── Start Sentinel Watch monitoring ──────────────────────────────────────
+    sentinel.init().catch(err => console.error('[Sentinel] Init error:', err.message));
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Additional STK Push endpoint (standalone)
@@ -430,6 +437,9 @@ app.post('/api/withdrawals', authenticateToken, requireActiveUser, async (req, r
     wallet.totalWithdrawn += amount;
     await wallet.save();
 
+    // ← SENTINEL: withdrawal requested
+    await sentinel.onWithdrawalRequested(req, user, amount, paymentMethod);
+
     // Send withdrawal submitted email notification
     try {
       await sendWithdrawalSubmittedEmail(user.email, user.firstName, amount, paymentMethod);
@@ -514,6 +524,9 @@ app.post('/api/user/withdrawals', authenticateToken, requireActiveUser, async (r
     wallet.balance -= amount;
     wallet.totalWithdrawn += amount;
     await wallet.save();
+
+    // ← SENTINEL: withdrawal requested
+    await sentinel.onWithdrawalRequested(req, user, amount, paymentMethod);
 
     // Send withdrawal submitted email notification
     try {
@@ -971,8 +984,10 @@ app.put('/api/admin/withdrawals/:withdrawalId', authenticateToken, requireAdmin,
     try {
       if (status === 'approved') {
         await sendWithdrawalApprovedEmail(withdrawal.userId.email, withdrawal.userId.firstName, withdrawal.amount, withdrawal.paymentMethod, payoutReference);
+        await sentinel.onWithdrawalApproved(req, req.user, withdrawal, withdrawal.userId); // ← SENTINEL
       } else if (status === 'rejected') {
         await sendWithdrawalRejectedEmail(withdrawal.userId.email, withdrawal.userId.firstName, withdrawal.amount, adminNotes || 'Withdrawal rejected');
+        await sentinel.onWithdrawalRejected(req, req.user, withdrawal, withdrawal.userId, adminNotes); // ← SENTINEL
       }
     } catch (emailError) {
       console.error('Failed to send withdrawal status email:', emailError);
@@ -1016,6 +1031,9 @@ app.put('/api/admin/users/:userId/approve', authenticateToken, requireAdmin, asy
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // ← SENTINEL: user approved
+    await sentinel.onUserApproved(req, req.user, user);
+
     res.json({
       message: 'User approved successfully',
       user: {
@@ -1050,6 +1068,9 @@ app.put('/api/admin/users/:userId/reject', authenticateToken, requireAdmin, asyn
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    // ← SENTINEL: user rejected
+    await sentinel.onUserRejected(req, req.user, user, reason);
 
     res.json({
       message: 'User rejected successfully',
@@ -1342,6 +1363,7 @@ app.put('/api/admin/task-submissions/:submissionId', authenticateToken, requireA
           { userId: submission.userId, submissionId: submissionId },
           { status: 'completed' }
         );
+        await sentinel.onTaskApproved(req, req.user, submission, submission.taskId.reward); // ← SENTINEL
       }
     } else if (action === 'reject') {
       updateData.status = 'rejected';
@@ -1363,6 +1385,7 @@ app.put('/api/admin/task-submissions/:submissionId', authenticateToken, requireA
           { userId: submission.userId, submissionId: submissionId },
           { status: 'rejected' }
         );
+        await sentinel.onTaskRejected(req, req.user, submission, rejectionReason); // ← SENTINEL
       } else {
         console.log('Submission not found', submissionId);
       }
@@ -1675,6 +1698,7 @@ app.post('/api/auth/register', async (req, res) => {
       },
       token
     });
+    await sentinel.onUserRegistered(req, newUser); // ← SENTINEL
   } catch (error) {
     console.error('Registration error:', error);
     // Return more specific error messages
@@ -1744,12 +1768,14 @@ app.post('/api/auth/login', async (req, res) => {
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
+      await sentinel.onLoginFailed(req, email); // ← SENTINEL
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check password
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
+      await sentinel.onLoginFailed(req, email); // ← SENTINEL
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -1773,6 +1799,7 @@ app.post('/api/auth/login', async (req, res) => {
       },
       token
     });
+    await sentinel.onLoginSuccess(req, user); // ← SENTINEL
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
@@ -1863,6 +1890,9 @@ app.post('/api/payment/stkpush', authenticateToken, async (req, res) => {
 
     await payment.save();
 
+    // ← SENTINEL: payment initiated
+    await sentinel.onPaymentInitiated(req, user, amount);
+
     res.json({
       message: 'Payment request sent successfully',
       transactionId: stkPushResult.transactionId,
@@ -1922,6 +1952,9 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
         activationDate: new Date()
       });
 
+      // ← SENTINEL: payment confirmed
+      await sentinel.onPaymentSuccess(user, payment.amount, payment.mpesaReceiptNumber);
+
       // Send payment success email notification
       try {
         if (user) {
@@ -1936,6 +1969,9 @@ app.post('/api/payment/stkpush/callback', async (req, res) => {
       // Payment failed
       payment.status = 'failed';
       payment.failureReason = ResultDesc;
+
+      // ← SENTINEL: payment failed
+      await sentinel.onPaymentFailed(user, payment.amount, ResultDesc);
 
       // Send payment failure email notification
       try {
@@ -1998,6 +2034,16 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// ── Global error handler — tracks 500 error rate with Sentinel ───────────────
+app.use(async (err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  await sentinel.onServerError(req, err); // ← SENTINEL: 500 spike detection
+  res.status(500).json({
+    error: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' ? { details: err.message } : {})
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
@@ -2015,5 +2061,3 @@ process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully');
   process.exit(0);
 });
-
-export default app;

@@ -81,7 +81,6 @@ export const Dashboard: React.FC = () => {
   const completedToday = dashboardData?.completedToday || 0;
   const recentActivity = dashboardData?.recentActivity || [];
 
-  console.log('Dashboard data:', { todaysTasks, recentActivity });
 
   const quickStats = [
     {
@@ -192,9 +191,8 @@ export const Dashboard: React.FC = () => {
           <div className="p-6">
             {todaysTasks.length > 0 ? (
               <div className="space-y-4">
-                {todaysTasks.slice(0, 2).map((item: { task: Task; userTask: UserTask }) => {
-                  console.log('Mapping todaysTasks item:', item);
-                  const { task, userTask } = item;
+                {todaysTasks.filter((userTask: any) => userTask && userTask.taskId).slice(0, 2).map((userTask: any) => {
+                  const task = userTask.taskId;
 
                   return (
                     <div key={userTask._id} className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200">
@@ -242,20 +240,17 @@ export const Dashboard: React.FC = () => {
           <div className="p-6">
             {recentActivity.length > 0 ? (
               <div className="space-y-4">
-                {recentActivity.slice(0, 5).map((activity: any, index: number) => {
-                  console.log('Mapping recentActivity item:', activity);
-                  return (
-                    <div key={index} className="flex items-center space-x-4 p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors duration-200">
-                      <div className="w-3 h-3 bg-emerald-500 rounded-full flex-shrink-0"></div>
-                      <div className="flex-1">
-                        <p className="text-base font-semibold text-gray-900">Task completed</p>
-                        <p className="text-sm text-gray-600">
-                          Earned KES {activity.reward} • {new Date(activity.updatedAt).toLocaleDateString()}
-                        </p>
-                      </div>
+                {recentActivity.slice(0, 5).map((activity: any, index: number) => (
+                  <div key={activity._id || index} className="flex items-center space-x-4 p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors duration-200">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-gray-900">Task completed</p>
+                      <p className="text-sm text-gray-600">
+                        Earned KES {activity.taskId?.reward || 'N/A'} • {new Date(activity.updatedAt).toLocaleDateString()}
+                      </p>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-12">

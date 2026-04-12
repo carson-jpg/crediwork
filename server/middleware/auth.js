@@ -24,8 +24,13 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
-export const requireAdmin = (req, res, next) => {
+export const requireAdmin = async (req, res, next) => {
   if (req.user.role !== 'admin') {
+    // ← SENTINEL: non-admin tried to hit an admin route
+    try {
+      const { default: sentinel } = await import('../sentinel.js');
+      await sentinel.onUnauthorizedAdminAccess(req);
+    } catch { /* silent */ }
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
