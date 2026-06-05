@@ -1,0 +1,23 @@
+services:
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: crediwork-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: crediwork-frontend
+    ports:
+      - "4173:4173"
+    depends_on:
+      - backend
+    restart: unless-stopped

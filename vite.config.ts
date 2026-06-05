@@ -8,12 +8,18 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
+    host: '0.0.0.0',
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'https://crediwork.onrender.com',
+        target: process.env.VITE_API_URL || 'https://crediwork.onrender.com',
         changeOrigin: true,
         secure: true,
       },
     },
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
   },
 });
