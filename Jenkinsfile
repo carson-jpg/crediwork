@@ -17,6 +17,7 @@ pipeline {
         stage('Check Docker') {
             steps {
                 sh 'docker --version'
+                sh 'docker ps'
             }
         }
 
@@ -53,7 +54,8 @@ pipeline {
                     docker run -d \
                         --name crediwork-backend \
                         --network crediwork-net \
-                        -p 5000:5000 \
+                        -p 3001:3001 \
+                        --env-file ./server/.env \
                         --restart unless-stopped \
                         $BACKEND_IMAGE
                 '''
