@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        COMPOSE_FILE = 'docker-compose.yml'
-    }
-
     stages {
 
         stage('Checkout') {
@@ -16,25 +12,25 @@ pipeline {
         stage('Check Docker') {
             steps {
                 sh 'docker --version'
-                sh 'docker compose version'
+                sh 'docker-compose --version || docker compose version'
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                sh 'docker compose build --no-cache'
+                sh 'docker-compose build --no-cache'
             }
         }
 
         stage('Stop Old Containers') {
             steps {
-                sh 'docker compose down || true'
+                sh 'docker-compose down || true'
             }
         }
 
         stage('Start Containers') {
             steps {
-                sh 'docker compose up -d'
+                sh 'docker-compose up -d'
             }
         }
 
@@ -42,14 +38,14 @@ pipeline {
             steps {
                 sh 'docker ps'
                 sh 'sleep 5'
-                sh 'docker compose logs --tail=20'
+                sh 'docker-compose logs --tail=20'
             }
         }
     }
 
     post {
         failure {
-            sh 'docker compose logs'
+            sh 'docker-compose logs || true'
         }
     }
 }
