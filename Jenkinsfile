@@ -29,7 +29,6 @@ pipeline {
 
         stage('Build Frontend Image') {
             steps {
-                // Retry up to 3 times for network flakiness
                 retry(3) {
                     sh 'docker build --no-cache -t $FRONTEND_IMAGE -f Dockerfile.frontend .'
                 }
@@ -53,15 +52,17 @@ pipeline {
 
         stage('Start Backend') {
             steps {
-                sh '''
-                    docker run -d \
-                        --name crediwork-backend \
-                        --network crediwork-net \
-                        -p 3001:3001 \
-                        --env-file ./server/.env \
-                        --restart unless-stopped \
-                        $BACKEND_IMAGE
-                '''
+                withCredentials([file(credentialsId: 'crediwork-backend-env', variable: 'ENV_FILE')]) {
+                    sh '''
+                        docker run -d \
+                            --name crediwork-backend \
+                            --network crediwork-net \
+                            -p 3001:3001 \
+                            --env-file $ENV_FILE \
+                            --restart unless-stopped \
+                            $BACKEND_IMAGE
+                    '''
+                }
             }
         }
 
