@@ -4,10 +4,10 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm config set fetch-retries 10 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm install --legacy-peer-deps
+# Retry npm install up to 3 times with increased timeout
+RUN npm install --registry https://registry.npmjs.org --fetch-retry-mintimeout 20000 --fetch-retry-maxtimeout 120000 --fetch-retries 5 || \
+    npm install --registry https://registry.npmjs.org --fetch-retry-mintimeout 20000 --fetch-retry-maxtimeout 120000 --fetch-retries 5 || \
+    npm install --registry https://registry.npmjs.org --fetch-retry-mintimeout 20000 --fetch-retry-maxtimeout 120000 --fetch-retries 5
 
 COPY . .
 

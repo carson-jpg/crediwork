@@ -29,7 +29,10 @@ pipeline {
 
         stage('Build Frontend Image') {
             steps {
-                sh 'docker build -t $FRONTEND_IMAGE -f Dockerfile.frontend .'
+                // Retry up to 3 times for network flakiness
+                retry(3) {
+                    sh 'docker build --no-cache -t $FRONTEND_IMAGE -f Dockerfile.frontend .'
+                }
             }
         }
 
